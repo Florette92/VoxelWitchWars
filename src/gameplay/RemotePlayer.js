@@ -94,6 +94,25 @@ export class RemotePlayer {
         this.targetRot.set(data.rx, data.ry, 0);
     }
 
+    setCarrying(color) {
+        if (this.flagMesh) {
+            this.mesh.remove(this.flagMesh);
+            this.flagMesh = null;
+        }
+        
+        if (color) {
+            const geo = new THREE.OctahedronGeometry(0.4, 0);
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: color, 
+                emissive: color,
+                emissiveIntensity: 1
+            });
+            this.flagMesh = new THREE.Mesh(geo, mat);
+            this.flagMesh.position.set(0, 2.5, -0.5); // Above/behind head
+            this.mesh.add(this.flagMesh);
+        }
+    }
+
     dispose() {
         this.scene.remove(this.mesh);
     }

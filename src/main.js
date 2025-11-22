@@ -167,25 +167,31 @@ networkManager.onPlayerMovedCallback = (data) => {
     }
 };
 
+let localCrystals = [];
+
 networkManager.onCrystalsInit = (crystals) => {
+    localCrystals = crystals;
     // Clear existing
     crystalMeshes.forEach(mesh => scene.remove(mesh));
     crystalMeshes.clear();
 
     const geo = new THREE.OctahedronGeometry(1, 0);
-    const mat = new THREE.MeshStandardMaterial({ 
-        color: 0x800080, 
-        emissive: 0x400040,
-        emissiveIntensity: 2
-    });
-
+    
     crystals.forEach(c => {
-        if (c.active) {
+        // Determine color based on team
+        const color = c.team === 'blue' ? 0x0000ff : 0xff0000;
+        const mat = new THREE.MeshStandardMaterial({ 
+            color: color, 
+            emissive: color,
+            emissiveIntensity: 2
+        });
+
+        if (c.state === 'home' || c.state === 'dropped') {
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(c.x, c.y, c.z);
             
             // Add light
-            const light = new THREE.PointLight(0x800080, 2, 20);
+            const light = new THREE.PointLight(color, 2, 20);
             mesh.add(light);
             
             scene.add(mesh);
@@ -194,17 +200,81 @@ networkManager.onCrystalsInit = (crystals) => {
     });
 };
 
-networkManager.onCrystalCollectedCallback = (data) => {
-    if (crystalMeshes.has(data.id)) {
-        const mesh = crystalMeshes.get(data.id);
-        scene.remove(mesh);
-        crystalMeshes.delete(data.id);
+networkManager.onCrystalUpdate = (data) => {
+    // Update local data
+    const crystal = localCrystals.find(c => c.id === data.id);
+    if (crystal) {
+        const oldCarrierId = crystal.carrierId;
         
-        // Particle effect
-        particleSystem.emit(mesh.position, 0x800080, 30);
-        soundManager.playExplosion(); // Reuse explosion sound for now
+        // Update data
+        Object.assign(crystal, data);
+
+        // Handle Carrier Visuals
+        if (oldCarrierId && oldCarrierId !== data.carrierId) {
+            // Dropped
+            if (remotePlayers.has(oldCarrierId)) {
+                remotePlayers.get(oldCarrierId).setCarrying(null);
+            }
+        }
+        
+        if (data.state === 'carried' && data.carrierId) {
+            // Picked up
+            if (remotePlayers.has(data.carrierId)) {
+                const color = crystal.team === 'blue' ? 0x0000ff : 0xff0000;
+                remotePlayers.get(data.carrierId).setCarrying(color);
+            }
+        }
+
+        // Update World Visuals
+        if (data.state === 'carried') {
+            // Remove from world
+            if (crystalMeshes.has(data.id)) {
+                const mesh = crystalMeshes.get(data.id);
+                scene.remove(mesh);
+                crystalMeshes.delete(data.id);
+            }
+        } else if (data.state === 'dropped' || data.state === 'home') {
+            // Ensure it exists in world
+            if (!crystalMeshes.has(data.id)) {
+                const color = crystal.team === 'blue' ? 0x0000ff : 0xff0000;
+                const geo = new THREE.OctahedronGeometry(1, 0);
+                const mat = new THREE.MeshStandardMaterial({ 
+                    color: color, 
+                    emissive: color,
+                    emissiveIntensity: 2
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(data.x, data.y, data.z);
+                const light = new THREE.PointLight(color, 2, 20);
+                mesh.add(light);
+                scene.add(mesh);
+                crystalMeshes.set(data.id, mesh);
+            } else {
+                // Update position
+                const mesh = crystalMeshes.get(data.id);
+                mesh.position.set(data.x, data.y, data.z);
+            }
+        }
     }
+};
+
+networkManager.onCrystalCaptured = (data) => {
+    // Play sound / particles
+    soundManager.playExplosion(); // Victory sound?
     updateScoreUI(data.scores);
+    
+    // Show message
+    const msg = `${data.team.toUpperCase()} Team Captured the Flag!`;
+    addChatMessage("System", msg, true);
+};
+
+networkManager.onCrystalCollectedCallback = (data) => {
+    // Legacy handler, might not be needed if we use onCrystalUpdate
+    // But we might use it for sound effects
+    if (data.team) {
+        // Someone picked it up
+    }
+    if (data.scores) updateScoreUI(data.scores);
 };
 
 networkManager.onScoreUpdate = (scores) => {
@@ -569,6 +639,22 @@ function animate() {
                 networkManager.collectCrystal(id);
             }
         });
+
+        // Check Base Collision (Capture)
+        const myTeam = player.team;
+        if (myTeam) {
+            let basePos;
+            if (myTeam === 'blue') basePos = new THREE.Vector3(-150, 32, 150);
+            else if (myTeam === 'red') basePos = new THREE.Vector3(-150, 32, -150);
+            
+            if (basePos && player.position.distanceTo(basePos) < 5) {
+                // Check if carrying enemy flag
+                const carrying = localCrystals.some(c => c.carrierId === networkManager.playerId && c.team !== myTeam);
+                if (carrying) {
+                    networkManager.send('captureFlag', {});
+                }
+            }
+        }
         
         // Update wind sound based on speed/height
         const speed = player.velocity.length();

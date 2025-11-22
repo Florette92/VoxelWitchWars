@@ -3,8 +3,22 @@ export class GameHost {
         this.networkManager = networkManager;
         this.players = {};
         this.crystals = [
-            { id: 2, x: -150, y: 60, z: 150, active: true },  // Ice Tower
-            { id: 4, x: -150, y: 60, z: -150, active: true }  // Volcanic Tower
+            { 
+                id: 'blue-flag', 
+                team: 'blue',
+                x: -150, y: 60, z: 150, 
+                originalX: -150, originalY: 60, originalZ: 150,
+                state: 'home', // home, carried, dropped
+                carrierId: null
+            },
+            { 
+                id: 'red-flag', 
+                team: 'red',
+                x: -150, y: 60, z: -150, 
+                originalX: -150, originalY: 60, originalZ: -150,
+                state: 'home',
+                carrierId: null
+            }
         ];
         this.scores = { red: 0, blue: 0 };
         this.TEAMS = ['red', 'blue'];
@@ -13,7 +27,17 @@ export class GameHost {
     init() {
         // Reset state
         this.scores = { red: 0, blue: 0 };
-        this.crystals.forEach(c => c.active = true);
+        this.resetCrystals();
+    }
+
+    resetCrystals() {
+        this.crystals.forEach(c => {
+            c.x = c.originalX;
+            c.y = c.originalY;
+            c.z = c.originalZ;
+            c.state = 'home';
+            c.carrierId = null;
+        });
     }
 
     addPlayer(id, name = "Unknown") {
@@ -73,6 +97,9 @@ export class GameHost {
                 // Broadcast chat message to everyone
                 this.networkManager.broadcast('chat', data);
                 break;
+            case 'captureFlag':
+                this.handleCaptureFlag(id);
+                break;
         }
     }
 
@@ -96,6 +123,22 @@ export class GameHost {
     handlePlayerDeath(id) {
         const player = this.players[id];
         if (player) {
+            // Check if carrying crystal
+            const carriedCrystal = this.crystals.find(c => c.carrierId === id);
+            if (carriedCrystal) {
+                carriedCrystal.state = 'dropped';
+                carriedCrystal.carrierId = null;
+                carriedCrystal.x = player.x;
+                carriedCrystal.y = player.y;
+                carriedCrystal.z = player.z;
+                
+                this.networkManager.broadcast('crystalUpdate', {
+                    id: carriedCrystal.id,
+                    state: 'dropped',
+                    x: player.x, y: player.y, z: player.z
+                });
+            }
+
             // Respawn logic
             this.networkManager.broadcast('playerDied', { id: id });
             
@@ -118,6 +161,7 @@ export class GameHost {
             }, 3000);
         }
     }
+
 
     handleJoinTeam(id, teamName) {
         console.log(`Host: Player ${id} joining team ${teamName}`);
@@ -166,40 +210,90 @@ export class GameHost {
 
     handleCollectCrystal(id, crystalId) {
         const crystal = this.crystals.find(c => c.id === crystalId);
-        if (crystal && crystal.active) {
-            crystal.active = false;
-            const player = this.players[id];
-            if (player) {
-                this.scores[player.team]++;
-                this.networkManager.broadcast('crystalCollected', {
-                    id: crystalId,
-                    team: player.team,
-                    scores: this.scores
-                });
+        const player = this.players[id];
+        
+        if (crystal && player) {
+            // Enemy Flag Logic
+            if (crystal.team !== player.team) {
+                if (crystal.state === 'home' || crystal.state === 'dropped') {
+                    // Pick up flag
+                    crystal.state = 'carried';
+                    crystal.carrierId = id;
+                    
+                    this.networkManager.broadcast('crystalUpdate', {
+                        id: crystalId,
+                        state: 'carried',
+                        carrierId: id
+                    });
+                }
+            }
+            // Friendly Flag Logic (Return)
+            else if (crystal.team === player.team && crystal.state === 'dropped') {
+                // Return flag to base
+                crystal.state = 'home';
+                crystal.carrierId = null;
+                crystal.x = crystal.originalX;
+                crystal.y = crystal.originalY;
+                crystal.z = crystal.originalZ;
 
-                this.checkWinCondition();
+                this.networkManager.broadcast('crystalUpdate', {
+                    id: crystalId,
+                    state: 'home',
+                    x: crystal.originalX,
+                    y: crystal.originalY,
+                    z: crystal.originalZ
+                });
             }
         }
     }
 
+    handleCaptureFlag(id) {
+        const player = this.players[id];
+        if (!player) return;
+
+        // Find the flag this player is carrying
+        const carriedCrystal = this.crystals.find(c => c.carrierId === id);
+        
+        if (carriedCrystal && carriedCrystal.team !== player.team) {
+            // Capture!
+            this.scores[player.team]++;
+            
+            // Reset the captured flag
+            carriedCrystal.state = 'home';
+            carriedCrystal.carrierId = null;
+            carriedCrystal.x = carriedCrystal.originalX;
+            carriedCrystal.y = carriedCrystal.originalY;
+            carriedCrystal.z = carriedCrystal.originalZ;
+
+            this.networkManager.broadcast('crystalCaptured', {
+                id: carriedCrystal.id,
+                team: player.team,
+                scores: this.scores
+            });
+
+            this.networkManager.broadcast('crystalUpdate', {
+                id: carriedCrystal.id,
+                state: 'home',
+                x: carriedCrystal.originalX,
+                y: carriedCrystal.originalY,
+                z: carriedCrystal.originalZ
+            });
+
+            this.checkWinCondition();
+        }
+    }
+
     checkWinCondition() {
-        const activeCrystals = this.crystals.filter(c => c.active).length;
-        if (activeCrystals === 0) {
-            let winner = 'red';
-            let maxScore = -1;
-            for (const [t, s] of Object.entries(this.scores)) {
-                if (s > maxScore) {
-                    maxScore = s;
-                    winner = t;
-                }
-            }
+        // First to 3 captures wins
+        if (this.scores.red >= 3 || this.scores.blue >= 3) {
+            let winner = this.scores.red >= 3 ? 'red' : 'blue';
             this.networkManager.broadcast('gameOver', { winner: winner });
             setTimeout(() => this.resetGame(), 5000);
         }
     }
 
     resetGame() {
-        this.crystals.forEach(c => c.active = true);
+        this.resetCrystals();
         this.scores = { red: 0, blue: 0 };
         this.networkManager.broadcast('gameReset', {
             crystals: this.crystals,
