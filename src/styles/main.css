@@ -326,7 +326,7 @@ button.start-game {
 }
 
 .start-btn:hover {
-  transform: scale(1.1);
+  transform: translate(-50%, -50%) scale(1.1);
   color: #fff;
 }
 
