@@ -354,6 +354,32 @@ button.start-game {
   z-index: 0;
 }
 
+/* Start Screen Image */
+.start-image {
+  position: absolute;
+  top: 65%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  pointer-events: none;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.start-image img {
+  max-width: 500px;
+  width: 80%;
+  height: auto;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+}
+
 /* Utility */
 .hidden {
     display: none !important;
