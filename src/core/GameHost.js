@@ -1,4 +1,3 @@
-
 export class GameHost {
     constructor(networkManager) {
         this.networkManager = networkManager;
@@ -58,7 +57,10 @@ export class GameHost {
 
     handleJoinTeam(id, teamName) {
         console.log(`Host: Player ${id} joining team ${teamName}`);
-        if (!this.TEAMS.includes(teamName)) return;
+        if (!this.TEAMS.includes(teamName)) {
+            console.error(`Host: Invalid team ${teamName}`);
+            return;
+        }
 
         let spawnX = 0, spawnY = 32, spawnZ = 0;
         if (teamName === 'blue') { spawnX = -150; spawnZ = 150; }
@@ -71,11 +73,15 @@ export class GameHost {
             player.y = spawnY;
             player.z = spawnZ;
 
+            console.log(`Host: Assigning ${id} to ${teamName}`);
+
             // Notify the player
             this.networkManager.sendTo(id, 'teamAssigned', player);
 
             // Notify everyone else
             this.networkManager.broadcast('playerJoined', player);
+        } else {
+            console.error(`Host: Player ${id} not found in players list`);
         }
     }
 

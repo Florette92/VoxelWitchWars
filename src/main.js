@@ -37,7 +37,8 @@ networkManager.onLocalPlayerInit = (data) => {
 };
 
 networkManager.onTeamAssignedCallback = (data) => {
-    console.log("Team Assigned:", data.team);
+    console.log("Team Assigned Callback received:", data);
+    console.log("Team:", data.team);
     player.setTeam(data.team);
     
     // Auto-spawn based on team
@@ -49,6 +50,7 @@ networkManager.onTeamAssignedCallback = (data) => {
         spawn.set(-150, 32, -150); // Volcanic
     }
 
+    console.log("Spawning at:", spawn);
     player.mesh.position.copy(spawn);
     player.physicsPosition.copy(spawn);
     player.velocity.set(0, 0, 0);
@@ -59,6 +61,7 @@ networkManager.onTeamAssignedCallback = (data) => {
     const ui = document.getElementById('ui');
     const scoreUI = document.getElementById('score-ui');
     
+    console.log("Hiding start menu, showing UI");
     startMenu.style.display = 'none';
     ui.style.display = 'block';
     scoreUI.style.display = 'block';
@@ -217,12 +220,14 @@ const lobbyStatus = document.getElementById('lobby-status');
 const btnHost = document.getElementById('btn-host');
 const btnJoin = document.getElementById('btn-join');
 const inputHostId = document.getElementById('input-host-id');
+const inputCustomHostId = document.getElementById('input-custom-host-id');
 
 if (btnHost) {
     btnHost.addEventListener('click', async () => {
+        const customId = inputCustomHostId.value.trim() || null;
         lobbyStatus.textContent = "Initializing Host...";
         try {
-            const id = await networkManager.hostGame();
+            const id = await networkManager.hostGame(customId);
             lobbyStatus.textContent = `Hosting! ID: ${id}`;
             // Copy to clipboard
             navigator.clipboard.writeText(id).then(() => {

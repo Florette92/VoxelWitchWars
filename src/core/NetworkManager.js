@@ -21,9 +21,13 @@ export class NetworkManager {
         this.onTeamAssignedCallback = null;
     }
 
-    async hostGame() {
+    async hostGame(customId = null) {
         this.isHost = true;
-        this.peer = new Peer(); // Auto-generate ID
+        if (customId) {
+            this.peer = new Peer(customId);
+        } else {
+            this.peer = new Peer(); // Auto-generate ID
+        }
         
         return new Promise((resolve, reject) => {
             this.peer.on('open', (id) => {
@@ -43,7 +47,12 @@ export class NetworkManager {
 
             this.peer.on('error', (err) => {
                 console.error(err);
-                this.showConnectionStatus(false, err.type);
+                let msg = err.type;
+                if (err.type === 'unavailable-id') {
+                    msg = "ID already taken. Try another.";
+                }
+                this.showConnectionStatus(false, msg);
+                reject(msg);
             });
         });
     }
@@ -76,7 +85,13 @@ export class NetworkManager {
                 this.conn.on('error', (err) => {
                     console.error("Connection Error", err);
                     this.showConnectionStatus(false, "Connection Error");
+                    reject(err);
                 });
+            });
+
+            this.peer.on('error', (err) => {
+                console.error("Peer Error", err);
+                reject(err);
             });
         });
     }
@@ -208,6 +223,7 @@ export class NetworkManager {
     }
 
     joinTeam(team) {
+        console.log("NetworkManager: Joining team", team);
         this.send("joinTeam", team);
     }
 
