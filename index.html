@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Voxel Witch Wars</title>
     <link rel="stylesheet" href="./src/styles/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
       /* Critical styles for error overlay */
       #error-overlay {
@@ -31,42 +32,100 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: url('path/to/your/background-image.jpg') no-repeat center center fixed;
-        background-size: cover;
+        background: linear-gradient(to bottom, #1a0b2e 0%, #4a1a6e 100%);
         display: flex;
         justify-content: center;
         align-items: center;
         flex-direction: column;
         z-index: 10000;
+        font-family: 'Press Start 2P', cursive;
+        overflow: hidden;
       }
 
       .start-title {
         font-size: 4rem;
         color: #fff;
-        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
-        margin: 0;
+        text-shadow: 4px 4px 0px #a020f0, 8px 8px 0px #000;
+        margin-bottom: 50px;
+        text-align: center;
+        line-height: 1.5;
+        z-index: 2;
       }
 
       .start-btn {
-        padding: 15px 30px;
-        font-size: 1.5rem;
-        color: #fff;
-        background: linear-gradient(90deg, rgba(255,68,68,1) 0%, rgba(255,165,0,1) 100%);
+        font-family: 'Press Start 2P', cursive;
+        font-size: 2rem;
+        color: #ffcc00;
+        background: none;
         border: none;
-        border-radius: 5px;
         cursor: pointer;
+        text-shadow: 2px 2px 0px #000;
+        animation: blink 1s infinite;
+        z-index: 2;
         margin-top: 20px;
-        transition: background 0.3s, transform 0.3s;
       }
 
       .start-btn:hover {
-        background: linear-gradient(90deg, rgba(255,165,0,1) 0%, rgba(255,68,68,1) 100%);
-        transform: scale(1.05);
+        transform: scale(1.1);
+        color: #fff;
       }
 
-      .start-art {
-        margin-top: 30px;
-        /* Add any additional styles for the art section */
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+
+      .witch-container {
+        position: absolute;
+        bottom: 10%;
+        left: 10%;
+        width: 300px;
+        height: 300px;
+        /* Placeholder for Witch Art */
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px dashed #a020f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.8rem;
+        z-index: 1;
+      }
+
+      .castle-container {
+        position: absolute;
+        bottom: 15%;
+        right: 10%;
+        width: 350px;
+        height: 350px;
+        /* Placeholder for Castle Art */
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px dashed #a020f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.8rem;
+        z-index: 1;
+      }
+      
+      /* Stars background */
+      .stars {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+            radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0));
+        background-repeat: repeat;
+        background-size: 200px 200px;
+        opacity: 0.5;
+        z-index: 0;
       }
     </style>
     <script>
@@ -99,13 +158,18 @@
 
     <!-- Start Screen -->
     <div id="start-screen" class="start-screen">
-      <div class="start-bg"></div>
+      <div class="stars"></div>
       <div class="start-content">
         <h1 class="start-title">VOXEL WITCH WARS</h1>
         <button id="start-btn" class="start-btn">PRESS START</button>
-        <div class="start-art">
-          <!-- You can add pixel art images here if available -->
-        </div>
+      </div>
+      <div class="witch-container">
+          <!-- Add <img src="assets/witch.png"> here -->
+          Witch Art
+      </div>
+      <div class="castle-container">
+          <!-- Add <img src="assets/castle.png"> here -->
+          Castle Art
       </div>
     </div>
 
