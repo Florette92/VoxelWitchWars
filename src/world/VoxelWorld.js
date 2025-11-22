@@ -462,28 +462,60 @@ export class VoxelWorld {
             const dz = z - towerZ;
             const dist = Math.sqrt(dx*dx + dz*dz);
             
-            const roofHeight = Math.floor(60 - 1.5 * dist);
+            // Calculate Roof Height
+            // Matches generateChunk logic: roof starts at 58, slope is 0.5 radius per 1 height
+            // y <= 71 - 2 * dist
+            const roofHeight = Math.floor(71 - 2 * dist);
             
-            // Roof Collision (Only if we are high enough to hit it)
-            // If we are on the ground (Y~30), we ignore the roof overhang
-            if (checkY > 40) {
-                if (roofHeight > 50) return roofHeight;
-            }
-            
+            // Wall Logic
             if (dist <= 5) {
                 if (dist > 3.5) {
                     // Wall
                     // Check for door
-                    // Door is 3 wide (dx < 1.5 means -1.5 to 1.5)
-                    // We use a wider collision gap (1.8) to prevent getting stuck on the frame
                     if (dz > 0 && Math.abs(dx) < 1.8) { 
                         return 30; // Doorway is ground level
                     }
-                    return 50; // Wall height
+                    // Wall height is 58 (30 + 28)
+                    // But roof might be higher or lower depending on distance
+                    return Math.max(58, roofHeight); 
                 } else {
                     // Interior
+                    // If we are flying high, we might hit the roof from inside?
+                    // For now, just return floor height for physics, 
+                    // but for raycasting (getBlock) we might miss the roof if we are inside.
+                    // However, getBlock uses (x,y,z) so it checks if y <= h.
+                    // If h is 30, then y=60 (roof) returns false.
+                    // This means we can't destroy the roof from inside if we use this logic!
+                    
+                    // But wait, getBlock is: return iy <= h;
+                    // This assumes a solid column from 0 to h.
+                    // The tower is HOLLOW.
+                    // getBlock returning true for interior air is wrong if we want to fly inside.
+                    // But getBlock returning false for roof is wrong if we want to shoot it.
+                    
+                    // The current getBlock implementation assumes heightmap terrain (solid from bottom up).
+                    // It does NOT support hollow structures like the tower interior + roof.
+                    // To support destroying the roof, we need getBlock to handle 3D structures, not just 2.5D heightmap.
+                    
+                    // Since we can't easily rewrite the whole engine to be fully voxel-based (storing all blocks),
+                    // we rely on procedural generation.
+                    // We need a isBlock(x,y,z) function that duplicates the generateChunk logic.
+                    
+                    // Let's switch getBlock to use a more accurate isBlock check instead of getHeight.
                     return 30;
                 }
+            }
+            
+            // Roof overhang outside walls
+            if (dist <= 6.5 && roofHeight > 30) {
+                 // Only return roof height if it's actually a roof block
+                 // But again, heightmap limitation.
+                 // If we return roofHeight, the space under the overhang becomes solid.
+                 // This prevents walking under the roof overhang.
+                 
+                 // For now, let's just fix the wall height issue which is the main blocker for destroying the tower.
+                 // The roof is less critical to destroy than the walls to get in.
+                 return roofHeight;
             }
         }
 
@@ -566,11 +598,80 @@ export class VoxelWorld {
             if (column.has(iy)) return true;
         }
 
-        // Procedural
-        const h = this.getHeight(ix, iz, iy);
-        if (h === -Infinity) return false;
+        // Procedural Logic (Duplicated from generateChunk for accuracy)
+        const islandData = this.getIslandData(ix, iz);
+        if (!islandData.isIsland) return false;
+
+        const c = islandData.center;
+        const groundY = 30;
+
+        // 1. Base Island
+        if (iy <= groundY) {
+            // Check for Pond/River holes if needed, but for now assume solid base
+            // Actually, let's check pond to be accurate
+            const pDx = ix - (c.x - 30);
+            const pDz = iz - c.z;
+            const pDist = Math.sqrt(pDx*pDx + pDz*pDz);
+            if (pDist < 12) {
+                const nPond = pDist / 12;
+                const pondDepth = Math.floor(4 * (1 - nPond*nPond));
+                const bedY = groundY - pondDepth;
+                return iy <= bedY; // Only solid below the pond bed (water is not "solid" for destruction usually, or maybe it is?)
+                // If we want to destroy water, return true. But usually we destroy blocks.
+                // Let's assume water is not a block for raycasting purposes here.
+            }
+            return true;
+        }
+
+        // 2. Tower
+        const towerX = c.x;
+        const towerZ = c.z;
+        const tDx = ix - towerX;
+        const tDz = iz - towerZ;
+        const tDist = Math.sqrt(tDx*tDx + tDz*tDz);
         
-        return iy <= h;
+        const towerRadius = 4.5;
+        const floorHeight = 7;
+        const numFloors = 4;
+        const towerHeight = floorHeight * numFloors; // 28
+        const roofBaseY = groundY + towerHeight; // 58
+
+        if (iy > groundY) {
+            // Walls
+            if (iy <= roofBaseY) {
+                const localY = iy - groundY;
+                // Check if within wall ring
+                // Outer radius: 4.5 (or 5 for rims)
+                // Inner radius: 3.0
+                const isRim = (localY % floorHeight === 0) || (localY % floorHeight === floorHeight - 1);
+                const currentRadius = isRim ? towerRadius + 0.5 : towerRadius;
+                
+                if (tDist <= currentRadius && tDist > currentRadius - 1.5) {
+                    // Door Check
+                    if (localY < 5 && tDz > 0 && Math.abs(tDx) < 1.5) {
+                        if (localY > 3) return true; // Arch
+                        return false; // Open door
+                    }
+                    return true; // Wall block
+                }
+            }
+            // Roof
+            else {
+                const roofY = iy - roofBaseY;
+                const roofRadius = towerRadius + 2 - (roofY * 0.5);
+                if (tDist <= roofRadius && roofRadius >= 0) {
+                    return true;
+                }
+            }
+        }
+
+        // 3. Trees
+        const treeH = this.getTreeHeight(ix, iz);
+        if (treeH > 0) {
+            if (iy <= 30 + treeH) return true;
+        }
+
+        return false;
     }
 
     raycast(origin, direction, maxDistance) {
