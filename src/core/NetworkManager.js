@@ -34,22 +34,41 @@ export class NetworkManager {
             }
         };
 
-        if (customId) {
-            this.peer = new Peer(customId, config);
-        } else {
-            this.peer = new Peer(undefined, config); // Auto-generate ID
+        console.log("Initializing Peer...");
+
+        try {
+            if (customId) {
+                this.peer = new Peer(customId, config);
+            } else {
+                this.peer = new Peer(config); // Auto-generate ID
+            }
+        } catch (e) {
+            console.error("PeerJS Init Error:", e);
+            throw new Error("Failed to initialize network: " + e.message);
         }
         
         return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                if (this.peer) this.peer.destroy();
+                reject("Connection timed out (10s). Check firewall/network.");
+            }, 10000);
+
             this.peer.on('open', (id) => {
+                clearTimeout(timeout);
                 console.log('My peer ID is: ' + id);
                 this.playerId = id;
-                this.gameHost = new GameHost(this);
-                this.gameHost.init();
-                this.gameHost.addPlayer(id); // Add self
                 
-                this.showConnectionStatus(true, `Hosting: ${id}`);
-                resolve(id);
+                try {
+                    this.gameHost = new GameHost(this);
+                    this.gameHost.init();
+                    this.gameHost.addPlayer(id); // Add self
+                    
+                    this.showConnectionStatus(true, `Hosting: ${id}`);
+                    resolve(id);
+                } catch (err) {
+                    console.error("GameHost Init Error:", err);
+                    reject("Failed to start GameHost: " + err.message);
+                }
             });
 
             this.peer.on('connection', (conn) => {
@@ -57,10 +76,15 @@ export class NetworkManager {
             });
 
             this.peer.on('error', (err) => {
-                console.error(err);
+                clearTimeout(timeout);
+                console.error("Peer Error:", err);
                 let msg = err.type;
                 if (err.type === 'unavailable-id') {
                     msg = "ID already taken. Try another.";
+                } else if (err.type === 'browser-incompatible') {
+                    msg = "Browser does not support WebRTC.";
+                } else if (err.type === 'network') {
+                    msg = "Network error. Check connection.";
                 }
                 this.showConnectionStatus(false, msg);
                 reject(msg);
