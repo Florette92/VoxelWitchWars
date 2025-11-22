@@ -23,6 +23,7 @@ export class VoxelWorld {
 
         this.destroyedBlocks = new Set();
         this.placedBlocks = new Map(); // Key: "x,z", Value: Map<y, color>
+        this.blockHealth = new Map(); // Key: "x,y,z", Value: health
 
         // Generate initial area
         this.generateChunk(0, 0);
@@ -368,6 +369,16 @@ export class VoxelWorld {
                     //     (r2 - 0.5) * 0.05,
                     //     (r3 - 0.5) * 0.05
                     // );
+
+                    // Apply Damage Darkening
+                    const blockKey = `${worldX},${y},${worldZ}`;
+                    if (this.blockHealth.has(blockKey)) {
+                        const health = this.blockHealth.get(blockKey);
+                        const maxHealth = 3;
+                        const brightness = 0.3 + (0.7 * (health / maxHealth)); // Min 0.3 brightness
+                        color.multiplyScalar(brightness);
+                    }
+
                     instancedMesh.setColorAt(count, color);
 
                     count++;
@@ -389,6 +400,16 @@ export class VoxelWorld {
                          instancedMesh.setMatrixAt(count, dummy.matrix);
                          
                          color.setHex(colorVal);
+
+                         // Apply Damage Darkening
+                         const blockKey = `${worldX},${y},${worldZ}`;
+                         if (this.blockHealth.has(blockKey)) {
+                             const health = this.blockHealth.get(blockKey);
+                             const maxHealth = 3;
+                             const brightness = 0.3 + (0.7 * (health / maxHealth));
+                             color.multiplyScalar(brightness);
+                         }
+
                          instancedMesh.setColorAt(count, color);
                          count++;
                     }
