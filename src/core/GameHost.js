@@ -103,6 +103,9 @@ export class GameHost {
             case 'requestRestart':
                 this.resetGame();
                 break;
+            case 'requestRespawn':
+                this.handleRequestRespawn(id);
+                break;
         }
     }
 
@@ -142,26 +145,29 @@ export class GameHost {
                 });
             }
 
-            // Respawn logic
+            // Notify death
             this.networkManager.broadcast('playerDied', { id: id });
             
-            // Reset health and respawn after delay
-            setTimeout(() => {
-                if (this.players[id]) {
-                    this.players[id].health = 100;
-                    // Respawn at team base
-                    let spawnX = 0, spawnZ = 0;
-                    if (player.team === 'blue') { spawnX = -150; spawnZ = 150; }
-                    else if (player.team === 'red') { spawnX = -150; spawnZ = -150; }
-                    
-                    this.players[id].x = spawnX;
-                    this.players[id].y = 32;
-                    this.players[id].z = spawnZ;
-                    
-                    this.networkManager.sendTo(id, 'teamAssigned', this.players[id]); // Re-send spawn info
-                    this.networkManager.broadcast('playerDamaged', { id: id, health: 100 }); // Reset health bar
-                }
-            }, 3000);
+            // Wait for player to request respawn
+        }
+    }
+
+    handleRequestRespawn(id) {
+        const player = this.players[id];
+        if (player) {
+            player.health = 100;
+            // Respawn at team base
+            let spawnX = 0, spawnZ = 0;
+            if (player.team === 'blue') { spawnX = -150; spawnZ = 150; }
+            else if (player.team === 'red') { spawnX = -150; spawnZ = -150; }
+            
+            player.x = spawnX;
+            player.y = 32;
+            player.z = spawnZ;
+            
+            this.networkManager.sendTo(id, 'teamAssigned', player); // Re-send spawn info
+            this.networkManager.broadcast('playerDamaged', { id: id, health: 100 }); // Reset health bar
+            this.networkManager.broadcast('playerJoined', player); // Re-broadcast position/state to others
         }
     }
 

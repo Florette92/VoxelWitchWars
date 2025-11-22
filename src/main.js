@@ -117,15 +117,27 @@ networkManager.onPlayerDied = () => {
     player.onDeath();
     
     // Show respawn menu
-    document.getElementById('respawn-menu').style.display = 'flex';
+    const menu = document.getElementById('respawn-menu');
+    if (menu) {
+        menu.classList.remove('hidden');
+        menu.style.display = 'flex';
+        document.exitPointerLock();
+    }
 };
 
 // Respawn Button Logic
 const respawnBtn = document.getElementById('respawn-btn');
 if (respawnBtn) {
     respawnBtn.addEventListener('click', () => {
+        // Request respawn from server
+        networkManager.send('requestRespawn', {});
+        
         // Hide menu
-        document.getElementById('respawn-menu').style.display = 'none';
+        const menu = document.getElementById('respawn-menu');
+        if (menu) {
+            menu.classList.add('hidden');
+            menu.style.display = 'none';
+        }
         
         // Reset Player State locally (position will be synced by teamAssigned)
         player.isDead = false;
