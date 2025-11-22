@@ -251,7 +251,9 @@ export class NetworkManager {
                 if (this.onScoreUpdate) this.onScoreUpdate(payload.scores);
                 break;
             case 'playerJoined':
-                this.onPlayerJoined(payload);
+                if (payload.id !== this.playerId) {
+                    this.onPlayerJoined(payload);
+                }
                 break;
             case 'playerLeft':
                 if (this.onPlayerLeftCallback) this.onPlayerLeftCallback(payload);
