@@ -29,6 +29,7 @@ export class NetworkManager {
         this.onHealthUpdate = null;
         this.onPlayerHitCallback = null; // New callback for visual effects
         this.onPlayerDied = null;
+        this.onChatMessage = null; // Callback for chat messages
     }
 
     async hostGame(customId = null, playerName = "Host") {
@@ -287,6 +288,9 @@ export class NetworkManager {
                     console.log(`Player ${payload.id} died.`);
                 }
                 break;
+            case 'chat':
+                if (this.onChatMessage) this.onChatMessage(payload);
+                break;
         }
     }
 
@@ -383,6 +387,15 @@ export class NetworkManager {
             } else {
                 callback(id, null); // Signal to remove
             }
+        });
+    }
+
+    sendChat(message) {
+        this.send("chat", {
+            id: this.playerId,
+            name: this.gameHost ? this.gameHost.players.get(this.playerId).name : "Player", // Basic name fallback
+            message: message,
+            timestamp: Date.now()
         });
     }
 }

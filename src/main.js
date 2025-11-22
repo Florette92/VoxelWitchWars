@@ -31,10 +31,8 @@ const remotePlayers = new Map();
 const crystalMeshes = new Map();
 
 // Network Callbacks
-networkManager.onLocalPlayerInit = (data) => {
-    console.log("Connected as:", data.id);
-    // Do nothing here, wait for team selection
-};
+// onLocalPlayerInit is defined below with chat logic
+
 
 networkManager.onTeamAssignedCallback = (data) => {
     console.log("Team Assigned Callback received:", data);
@@ -478,6 +476,50 @@ if (btnRefreshLobbies) {
         activeLobbies.clear();
         lobbyListContainer.innerHTML = '<div style="color: #aaa; font-size: 0.8rem; text-align: center; padding: 20px;">Refreshing...</div>';
         // GunDB will push updates again automatically
+    });
+}
+
+// Chat Logic
+const chatContainer = document.getElementById('chat-container');
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+
+function addChatMessage(name, message, isSystem = false) {
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    
+    if (isSystem) {
+        div.innerHTML = `<span class="system">${message}</span>`;
+    } else {
+        // Sanitize input
+        const safeName = name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const safeMsg = message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        div.innerHTML = `<span class="name">${safeName}:</span><span class="msg">${safeMsg}</span>`;
+    }
+    
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+networkManager.onChatMessage = (data) => {
+    addChatMessage(data.name, data.message);
+};
+
+if (chatInput) {
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const msg = chatInput.value.trim();
+            if (msg) {
+                networkManager.sendChat(msg);
+                chatInput.value = '';
+            }
+        }
+        e.stopPropagation(); // Prevent game controls from triggering
+    });
+    
+    // Prevent WASD movement while typing
+    chatInput.addEventListener('focus', () => {
+        // Maybe disable game controls flag here if needed
     });
 }
 
