@@ -5,52 +5,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <link rel="icon" type="image/svg+xml" href="vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Voxel Witch Wars</title>
+    <title>Voxel Witch Wars</title>
     <style>
-      body { margin: 0; overflow: hidden; }
-      canvas { display: block; }
-      #ui {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        color: white;
-        font-family: monospace;
-        pointer-events: none;
-      }
-      #crosshair {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 20px;
-        height: 20px;
-        transform: translate(-50%, -50%);
-        pointer-events: none;
-      }
-      #crosshair::before, #crosshair::after {
-        content: '';
-        position: absolute;
-        background: rgba(255, 255, 255, 0.8);
-      }
-      #crosshair::before {
-        top: 9px;
-        left: 0;
-        width: 20px;
-        height: 2px;
-      }
-      #crosshair::after {
-        top: 0;
-        left: 9px;
-        width: 2px;
-        height: 20px;
-      }
+      /* Critical styles for error overlay */
       #error-overlay {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.8);
-        color: red;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.9);
+        color: #ff4444;
         display: none;
         flex-direction: column;
         justify-content: center;
@@ -80,76 +42,98 @@
         }
       };
     </script>
-    <script type="module" crossorigin src="./assets/index-BLYTqrF6.js"></script>
+    <script type="module" crossorigin src="./assets/index-Cf8MGSlA.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Dg3kZyDa.css">
   </head>
   <body>
+    <!-- Error Overlay -->
     <div id="error-overlay">
       <h1>Game Error</h1>
-      <div id="error-content" style="background: #222; padding: 20px; border: 1px solid red; max-width: 800px; overflow: auto;"></div>
-      <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px;">Reload</button>
+      <div id="error-content" style="background: #222; padding: 20px; border: 1px solid red; max-width: 800px; overflow: auto; width: 100%;"></div>
+      <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #ff4444; color: white; border: none; cursor: pointer;">Reload</button>
     </div>
+
+    <!-- Game UI -->
     <div id="crosshair"></div>
+    
     <div id="ui" style="display: none;">
-      <div id="health-bar-container" style="position: absolute; bottom: 20px; left: 20px; width: 300px; height: 30px; background: #333; border: 2px solid #fff; border-radius: 5px;">
-        <div id="health-bar" style="width: 100%; height: 100%; background: #00ff00; transition: width 0.2s;"></div>
-        <span id="health-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; text-shadow: 1px 1px 2px black;">100 / 100</span>
+      <div id="health-bar-container">
+        <div id="health-bar"></div>
+        <span id="health-text">100 / 100</span>
       </div>
-      <p>WASD to move</p>
-      <p>Mouse to look</p>
-      <p>Click to lock cursor</p>
-      <p>Click to shoot</p>
-      <p>B to toggle Build Mode</p>
-    </div>
-    <div id="lobby-menu" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100;">
-      <h1 style="font-size: 4rem; margin-bottom: 2rem; text-shadow: 0 0 10px #a020f0;">Voxel Witch Wars</h1>
       
-      <div id="main-menu-buttons">
-        <div style="margin-bottom: 20px; text-align: center;">
-            <input type="text" id="input-player-name" placeholder="Enter Your Name" style="padding: 10px; font-size: 1.2rem; width: 300px; margin-bottom: 10px; text-align: center;">
+      <div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px;">
+        <p>WASD to move</p>
+        <p>Mouse to look</p>
+        <p>Click to lock cursor</p>
+        <p>Click to shoot</p>
+        <p>B to toggle Build Mode</p>
+      </div>
+    </div>
+
+    <!-- Lobby / Main Menu -->
+    <div id="lobby-menu" class="menu-overlay">
+      <h1>Voxel Witch Wars</h1>
+      
+      <!-- Main Menu Panel -->
+      <div id="main-menu-buttons" class="panel">
+        <div class="flex-col">
+            <input type="text" id="input-player-name" placeholder="Enter Your Name">
         </div>
 
-        <div style="text-align: center; margin-bottom: 30px;">
-          <input type="text" id="input-custom-host-id" placeholder="Custom Room Name (Optional)" style="padding: 10px; font-size: 1rem; width: 200px; margin-bottom: 10px;">
-          <br>
-          <button id="btn-host" style="padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #4CAF50; border: none; color: white; border-radius: 5px; margin-bottom: 10px; width: 200px;">Host Game</button>
-          <p style="font-size: 0.9rem; color: #aaa;">Start a new game as the host</p>
+        <div class="divider"></div>
+
+        <div class="flex-col">
+          <input type="text" id="input-custom-host-id" placeholder="Custom Room Name (Optional)">
+          <button id="btn-host">Host Game</button>
+          <p style="font-size: 0.9rem; color: #aaa; margin: 0;">Start a new game as the host</p>
         </div>
 
-        <div style="text-align: center; border-top: 1px solid #555; padding-top: 20px;">
-          <input type="text" id="input-host-id" placeholder="Enter Host ID" style="padding: 10px; font-size: 1rem; width: 200px; margin-bottom: 10px;">
-          <br>
-          <button id="btn-join" style="padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #2196F3; border: none; color: white; border-radius: 5px; width: 200px;">Join Game</button>
+        <div class="divider"></div>
+
+        <div class="flex-col">
+          <input type="text" id="input-host-id" placeholder="Enter Host ID">
+          <button id="btn-join" class="secondary">Join Game</button>
         </div>
       </div>
 
-      <div id="waiting-room" style="display: none; flex-direction: column; align-items: center; width: 100%; max-width: 600px;">
-        <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Lobby: <span id="lobby-name-display" style="color: #a020f0;"></span></h2>
-        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; width: 100%; margin-bottom: 20px;">
-          <h3 style="margin-top: 0;">Players:</h3>
-          <ul id="player-list" style="list-style: none; padding: 0; font-size: 1.2rem;">
+      <!-- Waiting Room Panel -->
+      <div id="waiting-room" class="panel hidden">
+        <h2>Lobby: <span id="lobby-name-display" style="color: var(--primary-color);"></span></h2>
+        
+        <div style="width: 100%; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+          <h3 style="margin-top: 0; color: #ccc;">Players:</h3>
+          <ul id="player-list">
             <!-- Players will be listed here -->
           </ul>
         </div>
-        <button id="start-game-btn" style="display: none; padding: 15px 40px; font-size: 1.5rem; cursor: pointer; background: #00ff00; color: black; border: none; border-radius: 5px; font-weight: bold;">START GAME</button>
-        <p id="waiting-msg" style="display: none; color: #aaa;">Waiting for host to start...</p>
+
+        <button id="start-game-btn" class="start-game hidden">START GAME</button>
+        <p id="waiting-msg" class="hidden status-msg">Waiting for host to start...</p>
       </div>
       
-      <div id="lobby-status" style="margin-top: 20px; color: #ffcc00; font-size: 1.2rem;"></div>
+      <div id="lobby-status" class="status-msg" style="color: var(--secondary-color);"></div>
     </div>
 
-    <div id="start-menu" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100;">
-      <h1 style="font-size: 4rem; margin-bottom: 2rem; text-shadow: 0 0 10px #a020f0;">Voxel Witch Wars</h1>
-      <h2 id="team-display">Select Your Team</h2>
-      <div id="team-select" style="display: flex; gap: 20px; margin-top: 20px;">
-        <button class="team-btn" data-team="blue" style="padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #0000ff; border: none; color: white; border-radius: 5px;">Ice (Blue)</button>
-        <button class="team-btn" data-team="red" style="padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #ff0000; border: none; color: white; border-radius: 5px;">Fire (Red)</button>
+    <!-- Team Selection Menu -->
+    <div id="start-menu" class="menu-overlay hidden">
+      <h1>Voxel Witch Wars</h1>
+      <div class="panel">
+        <h2 id="team-display">Select Your Team</h2>
+        <div id="team-select" style="display: flex; gap: 20px; margin-top: 20px;">
+          <button class="team-btn" data-team="blue">Ice (Blue)</button>
+          <button class="team-btn" data-team="red">Fire (Red)</button>
+        </div>
+        <div id="loading-msg" class="hidden status-msg">Joining...</div>
       </div>
-      <div id="loading-msg" style="display: none; margin-top: 20px;">Joining...</div>
     </div>
-    <div id="respawn-menu" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; text-align: center; color: white; z-index: 100;">
-      <h2>You Fell into the Void!</h2>
-      <button id="respawn-btn" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Respawn</button>
+
+    <!-- Respawn Menu -->
+    <div id="respawn-menu" class="panel hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200;">
+      <h2 style="color: #ff4444;">You Died!</h2>
+      <button id="respawn-btn">Respawn</button>
     </div>
+
     <canvas id="minimap" width="200" height="200" style="position: absolute; top: 10px; right: 10px; border: 2px solid #444; background: #000; border-radius: 50%; opacity: 0.9; z-index: 100;"></canvas>
   </body>
 </html>
