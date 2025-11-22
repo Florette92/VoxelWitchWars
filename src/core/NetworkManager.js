@@ -1,5 +1,4 @@
 import { Peer } from "peerjs";
-import { io } from "socket.io-client";
 import { GameHost } from "./GameHost.js";
 
 export class NetworkManager {
@@ -10,9 +9,6 @@ export class NetworkManager {
         this.isHost = false;
         this.gameHost = null;
         this.playerId = null;
-        
-        // Lobby Socket
-        this.lobbySocket = null;
         
         // Callbacks
         this.onLocalPlayerInit = null;
@@ -25,41 +21,7 @@ export class NetworkManager {
         this.onTeamAssignedCallback = null;
     }
 
-    // Connect to the Lobby Server to get room lists
-    connectToLobbyServer() {
-        // If on GitHub Pages, skip trying to connect to localhost/relative port 3001
-        if (window.location.hostname.includes('github.io')) {
-            console.log("On GitHub Pages - skipping Lobby Server connection (Direct P2P Mode).");
-            return Promise.resolve(false);
-        }
-
-        // We use a short timeout to detect if the server is available.
-        const serverUrl = `http://${window.location.hostname}:3001`;
-        this.lobbySocket = io(serverUrl, {
-            reconnectionAttempts: 2,
-            timeout: 2000
-        });
-        
-        return new Promise((resolve) => {
-            this.lobbySocket.on('connect', () => {
-                console.log("Connected to Lobby Server");
-                resolve(true);
-            });
-            this.lobbySocket.on('connect_error', () => {
-                console.warn("Lobby Server unreachable - switching to Direct P2P mode");
-                resolve(false);
-            });
-        });
-    }
-
-    async createLobby(name) {
-        let connected = false;
-        if (!this.lobbySocket || !this.lobbySocket.connected) {
-             connected = await this.connectToLobbyServer();
-        } else {
-             connected = true;
-        }
-        
+    async hostGame() {
         this.isHost = true;
         this.peer = new Peer(); // Auto-generate ID
         
@@ -71,19 +33,8 @@ export class NetworkManager {
                 this.gameHost.init();
                 this.gameHost.addPlayer(id); // Add self
                 
-                if (connected) {
-                    // Register with Lobby Server
-                    this.lobbySocket.emit('createLobby', { hostPeerId: id, name: name });
-                    
-                    this.lobbySocket.once('lobbyCreated', (lobby) => {
-                        this.showConnectionStatus(true, `Hosting: ${lobby.code}`);
-                        resolve(lobby.code);
-                    });
-                } else {
-                    // Fallback: Return the full Peer ID
-                    this.showConnectionStatus(true, `Hosting (Direct): ${id}`);
-                    resolve(id);
-                }
+                this.showConnectionStatus(true, `Hosting: ${id}`);
+                resolve(id);
             });
 
             this.peer.on('connection', (conn) => {
@@ -93,37 +44,6 @@ export class NetworkManager {
             this.peer.on('error', (err) => {
                 console.error(err);
                 this.showConnectionStatus(false, err.type);
-                reject(err); // Reject promise on error
-            });
-        });
-    }
-
-    async joinLobby(code) {
-        // If code is long, assume it's a direct Peer ID
-        if (code.length > 10) {
-            return this.joinGame(code);
-        }
-
-        let connected = false;
-        if (!this.lobbySocket || !this.lobbySocket.connected) {
-             connected = await this.connectToLobbyServer();
-        } else {
-             connected = true;
-        }
-
-        if (!connected) {
-            throw new Error("Lobby Server unreachable. Please use a Direct Peer ID.");
-        }
-
-        return new Promise((resolve, reject) => {
-            this.lobbySocket.emit('joinLobby', code);
-            
-            this.lobbySocket.once('lobbyJoined', (lobby) => {
-                this.joinGame(lobby.hostPeerId).then(resolve).catch(reject);
-            });
-            
-            this.lobbySocket.once('error', (err) => {
-                reject(err);
             });
         });
     }

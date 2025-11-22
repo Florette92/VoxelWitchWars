@@ -216,68 +216,23 @@ const lobbyMenu = document.getElementById('lobby-menu');
 const lobbyStatus = document.getElementById('lobby-status');
 const btnHost = document.getElementById('btn-host');
 const btnJoin = document.getElementById('btn-join');
-const inputLobbyName = document.getElementById('input-lobby-name');
-const inputLobbyCode = document.getElementById('input-lobby-code');
-const lobbyListDiv = document.getElementById('lobby-list');
-
-// Connect to Lobby Server immediately to get list
-networkManager.connectToLobbyServer().then(() => {
-    lobbyStatus.textContent = "Connected to Lobby Server";
-    
-    networkManager.lobbySocket.on('lobbyList', (lobbies) => {
-        updateLobbyList(lobbies);
-    });
-});
-
-function updateLobbyList(lobbies) {
-    lobbyListDiv.innerHTML = '';
-    if (lobbies.length === 0) {
-        lobbyListDiv.innerHTML = '<div style="color: #aaa; font-style: italic;">No active lobbies found. Create one!</div>';
-        return;
-    }
-
-    lobbies.forEach(([code, lobby]) => {
-        const div = document.createElement('div');
-        div.style.background = 'rgba(255,255,255,0.1)';
-        div.style.padding = '10px';
-        div.style.marginBottom = '5px';
-        div.style.borderRadius = '5px';
-        div.style.display = 'flex';
-        div.style.justifyContent = 'space-between';
-        div.style.alignItems = 'center';
-        div.style.cursor = 'pointer';
-        
-        div.innerHTML = `
-            <span><strong>${lobby.name}</strong> <small>(${code})</small></span>
-            <button style="background: #2196F3; border: none; color: white; padding: 5px 10px; border-radius: 3px; cursor: pointer;">Join</button>
-        `;
-        
-        div.onclick = () => {
-            inputLobbyCode.value = code;
-            btnJoin.click();
-        };
-        
-        lobbyListDiv.appendChild(div);
-    });
-}
+const inputHostId = document.getElementById('input-host-id');
 
 if (btnHost) {
     btnHost.addEventListener('click', async () => {
-        const name = inputLobbyName.value.trim() || "My Game";
-        lobbyStatus.textContent = "Creating Lobby...";
+        lobbyStatus.textContent = "Initializing Host...";
         try {
-            const code = await networkManager.createLobby(name);
-            
-            if (code.length > 10) {
-                lobbyStatus.innerHTML = `Direct Mode! ID: <span style="user-select: all; background: #333; padding: 2px 5px; border-radius: 3px;">${code}</span><br><small>(Share this ID with friends)</small>`;
-            } else {
-                lobbyStatus.textContent = `Lobby Created! Code: ${code}`;
-            }
+            const id = await networkManager.hostGame();
+            lobbyStatus.textContent = `Hosting! ID: ${id}`;
+            // Copy to clipboard
+            navigator.clipboard.writeText(id).then(() => {
+                lobbyStatus.textContent += " (Copied to clipboard)";
+            });
             
             setTimeout(() => {
                 lobbyMenu.style.display = 'none';
                 startMenu.style.display = 'flex';
-            }, 3000); // Increased delay so user can read the ID
+            }, 2000);
         } catch (err) {
             lobbyStatus.textContent = "Error: " + err;
         }
@@ -286,20 +241,15 @@ if (btnHost) {
 
 if (btnJoin) {
     btnJoin.addEventListener('click', async () => {
-        let code = inputLobbyCode.value.trim();
-        if (!code) {
-            lobbyStatus.textContent = "Please enter a Room Code";
+        const id = inputHostId.value.trim();
+        if (!id) {
+            lobbyStatus.textContent = "Please enter a Host ID";
             return;
         }
         
-        // If it's a short code (4 chars), uppercase it. If it's a long Peer ID, keep it as is.
-        if (code.length <= 4) {
-            code = code.toUpperCase();
-        }
-        
-        lobbyStatus.textContent = `Joining ${code}...`;
+        lobbyStatus.textContent = "Connecting...";
         try {
-            await networkManager.joinLobby(code);
+            await networkManager.joinGame(id);
             lobbyMenu.style.display = 'none';
             startMenu.style.display = 'flex';
         } catch (err) {
