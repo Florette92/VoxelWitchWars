@@ -296,16 +296,24 @@ button.start-game {
 }
 
 .start-title {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 4rem;
   color: #fff;
   text-shadow: 4px 4px 0px #a020f0, 8px 8px 0px #000;
-  margin-bottom: 50px;
   text-align: center;
   line-height: 1.5;
   z-index: 2;
+  width: 100%;
 }
 
 .start-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   font-family: 'Press Start 2P', cursive;
   font-size: 2rem;
   color: #ffcc00;
@@ -315,7 +323,6 @@ button.start-game {
   text-shadow: 2px 2px 0px #000;
   animation: blink 1s infinite;
   z-index: 2;
-  margin-top: 20px;
 }
 
 .start-btn:hover {
