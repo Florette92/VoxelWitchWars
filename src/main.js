@@ -395,8 +395,11 @@ document.body.appendChild(scoreUI);
 const startScreen = document.getElementById('start-screen');
 const startBtn = document.getElementById('start-btn');
 
+console.log('Start Screen Element:', startScreen); // Debug log
+
 if (startBtn && startScreen) {
     startBtn.addEventListener('click', () => {
+        console.log('Start button clicked'); // Debug log
         startScreen.style.display = 'none';
         document.getElementById('lobby-menu').style.display = 'flex';
     });

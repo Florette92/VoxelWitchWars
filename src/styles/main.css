@@ -278,7 +278,108 @@ button.start-game {
     z-index: 10;
 }
 
-/* Start Screen Styles - Moved to index.html */
+/* Start Screen Styles */
+.start-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, #1a0b2e 0%, #4a1a6e 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 10000;
+  font-family: 'Press Start 2P', cursive;
+  overflow: hidden;
+}
+
+.start-title {
+  font-size: 4rem;
+  color: #fff;
+  text-shadow: 4px 4px 0px #a020f0, 8px 8px 0px #000;
+  margin-bottom: 50px;
+  text-align: center;
+  line-height: 1.5;
+  z-index: 2;
+}
+
+.start-btn {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 2rem;
+  color: #ffcc00;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-shadow: 2px 2px 0px #000;
+  animation: blink 1s infinite;
+  z-index: 2;
+  margin-top: 20px;
+}
+
+.start-btn:hover {
+  transform: scale(1.1);
+  color: #fff;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.witch-container {
+  position: absolute;
+  bottom: 10%;
+  left: 10%;
+  width: 300px;
+  height: 300px;
+  /* Placeholder for Witch Art */
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px dashed #a020f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.8rem;
+  z-index: 1;
+}
+
+.castle-container {
+  position: absolute;
+  bottom: 15%;
+  right: 10%;
+  width: 350px;
+  height: 350px;
+  /* Placeholder for Castle Art */
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px dashed #a020f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.8rem;
+  z-index: 1;
+}
+
+/* Stars background */
+.stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+      radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 50px 160px, #ddd, rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 130px 80px, #fff, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  opacity: 0.5;
+  z-index: 0;
+}
 
 /* Utility */
 .hidden {
