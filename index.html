@@ -45,8 +45,8 @@
         }
       };
     </script>
-    <script type="module" crossorigin src="./assets/index-MAodhVHB.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DuNJABex.css">
+    <script type="module" crossorigin src="./assets/index-BU6vTXMs.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DvXhdwe3.css">
   </head>
   <body>
     <!-- Error Overlay -->
@@ -100,7 +100,7 @@
 
         <div class="flex-col">
           <input type="text" id="input-custom-host-id" placeholder="Custom Room Name (Optional)">
-          <button id="btn-host">Host Game</button>
+          <button id="btn-host" class="primary">Host Game</button>
           <p style="font-size: 0.9rem; color: #aaa; margin: 0;">Start a new game as the host</p>
         </div>
 
@@ -156,6 +156,12 @@
     <div id="respawn-menu" class="panel hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200;">
       <h2 style="color: #ff4444;">You Died!</h2>
       <button id="respawn-btn">Respawn</button>
+    </div>
+
+    <!-- Chat Box -->
+    <div id="chat-container" class="hidden">
+      <div id="chat-messages"></div>
+      <input type="text" id="chat-input" placeholder="Type a message...">
     </div>
 
     <canvas id="minimap" class="hidden" width="200" height="200" style="position: absolute; top: 10px; right: 10px; border: 2px solid #444; background: #000; border-radius: 50%; opacity: 0.9; z-index: 100;"></canvas>
