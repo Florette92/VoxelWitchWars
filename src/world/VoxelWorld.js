@@ -359,15 +359,15 @@ export class VoxelWorld {
                     color.setHex(blockColor);
                     
                     // Deterministic random for color variation
-                    const r1 = this.hash(worldX, y + worldZ * 57);
-                    const r2 = this.hash(worldX * 13, y * 7 + worldZ);
-                    const r3 = this.hash(worldX + y * 3, worldZ * 11);
+                    // const r1 = this.hash(worldX, y + worldZ * 57);
+                    // const r2 = this.hash(worldX * 13, y * 7 + worldZ);
+                    // const r3 = this.hash(worldX + y * 3, worldZ * 11);
 
-                    color.offsetHSL(
-                        (r1 - 0.5) * 0.05,
-                        (r2 - 0.5) * 0.05,
-                        (r3 - 0.5) * 0.05
-                    );
+                    // color.offsetHSL(
+                    //     (r1 - 0.5) * 0.05,
+                    //     (r2 - 0.5) * 0.05,
+                    //     (r3 - 0.5) * 0.05
+                    // );
                     instancedMesh.setColorAt(count, color);
 
                     count++;
@@ -414,7 +414,11 @@ export class VoxelWorld {
 
         for (let x = -drawDistance; x <= drawDistance; x++) {
             for (let z = -drawDistance; z <= drawDistance; z++) {
-                this.generateChunk(chunkX + x, chunkZ + z);
+                // Only generate if not already generated
+                const key = this.getChunkKey(chunkX + x, chunkZ + z);
+                if (!this.chunks.has(key)) {
+                    this.generateChunk(chunkX + x, chunkZ + z);
+                }
             }
         }
     }
