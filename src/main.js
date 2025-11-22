@@ -88,6 +88,29 @@ networkManager.onHealthUpdate = (health) => {
     }
 };
 
+networkManager.onPlayerHitCallback = (id) => {
+    // Determine position of the hit player
+    let position = null;
+
+    if (id === networkManager.playerId) {
+        // It's me!
+        position = player.mesh.position.clone();
+        // Add a bit of height to center on body
+        position.y += 1.0;
+    } else if (remotePlayers.has(id)) {
+        // It's a remote player
+        const rp = remotePlayers.get(id);
+        position = rp.mesh.position.clone();
+        position.y += 1.0;
+    }
+
+    if (position) {
+        // Emit red particles (blood/magic impact)
+        particleSystem.emit(position, 0xff0000, 15, 8, 0.5);
+        soundManager.playExplosion(); // Or a specific hit sound if we had one
+    }
+};
+
 networkManager.onPlayerDied = () => {
     console.log("You Died!");
     player.onDeath();

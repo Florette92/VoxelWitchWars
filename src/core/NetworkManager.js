@@ -22,6 +22,7 @@ export class NetworkManager {
         this.onPlayerListUpdate = null;
         this.onGameStarted = null;
         this.onHealthUpdate = null;
+        this.onPlayerHitCallback = null; // New callback for visual effects
         this.onPlayerDied = null;
     }
 
@@ -262,6 +263,12 @@ export class NetworkManager {
                 if (this.onTeamAssignedCallback) this.onTeamAssignedCallback(payload);
                 break;
             case 'playerDamaged':
+                // Trigger visual effect for everyone
+                if (this.onPlayerHitCallback) {
+                    this.onPlayerHitCallback(payload.id);
+                }
+
+                // Update health UI if it's me
                 if (payload.id === this.playerId) {
                     if (this.onHealthUpdate) this.onHealthUpdate(payload.health);
                 }
