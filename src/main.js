@@ -391,6 +391,20 @@ const scoreUI = document.createElement('div');
 scoreUI.id = 'score-ui';
 document.body.appendChild(scoreUI);
 
+// Start Screen Logic
+const startScreen = document.getElementById('start-screen');
+const startBtn = document.getElementById('start-btn');
+
+if (startBtn && startScreen) {
+    startBtn.addEventListener('click', () => {
+        startScreen.style.display = 'none';
+        document.getElementById('lobby-menu').style.display = 'flex';
+    });
+    // Show start screen on load
+    startScreen.style.display = 'flex';
+    document.getElementById('lobby-menu').style.display = 'none';
+}
+
 // Remove old listener if it exists (it was replaced above, but just to be safe regarding the old button code)
 // The previous replace_string_in_file removed the onLocalPlayerInit block which contained the logic.
 // Now we need to remove the old button listener for 'btn-join' which is no longer in the HTML.
