@@ -24,7 +24,8 @@ export class GameHost {
             x: 0, y: 0, z: 0,
             rx: 0, ry: 0,
             team: 'spectator',
-            biome: 'forest'
+            biome: 'forest',
+            health: 100
         };
 
         // Send initial state to the new player
@@ -65,6 +66,52 @@ export class GameHost {
             case 'collectCrystal':
                 this.handleCollectCrystal(id, data);
                 break;
+            case 'hitPlayer':
+                this.handleHitPlayer(id, data);
+                break;
+        }
+    }
+
+    handleHitPlayer(shooterId, data) {
+        const { targetId, damage } = data;
+        const target = this.players[targetId];
+        
+        if (target && target.health > 0) {
+            target.health -= damage;
+            if (target.health < 0) target.health = 0;
+            
+            // Notify everyone (or just target)
+            this.networkManager.broadcast('playerDamaged', { id: targetId, health: target.health });
+            
+            if (target.health <= 0) {
+                this.handlePlayerDeath(targetId);
+            }
+        }
+    }
+
+    handlePlayerDeath(id) {
+        const player = this.players[id];
+        if (player) {
+            // Respawn logic
+            this.networkManager.broadcast('playerDied', { id: id });
+            
+            // Reset health and respawn after delay
+            setTimeout(() => {
+                if (this.players[id]) {
+                    this.players[id].health = 100;
+                    // Respawn at team base
+                    let spawnX = 0, spawnZ = 0;
+                    if (player.team === 'blue') { spawnX = -150; spawnZ = 150; }
+                    else if (player.team === 'red') { spawnX = -150; spawnZ = -150; }
+                    
+                    this.players[id].x = spawnX;
+                    this.players[id].y = 32;
+                    this.players[id].z = spawnZ;
+                    
+                    this.networkManager.sendTo(id, 'teamAssigned', this.players[id]); // Re-send spawn info
+                    this.networkManager.broadcast('playerDamaged', { id: id, health: 100 }); // Reset health bar
+                }
+            }, 3000);
         }
     }
 

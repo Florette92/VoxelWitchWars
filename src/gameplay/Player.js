@@ -133,7 +133,7 @@ export class Player {
         return this.physicsPosition;
     }
 
-    update(delta) {
+    update(delta, remotePlayers) {
         if (this.isDead) return;
 
         // Network Update
@@ -145,17 +145,14 @@ export class Player {
             }
         }
 
-        // Check Biome for Outfit Change
-        // Disabled: Player keeps their spawn/team color
-        /*
-        this.checkBiomeTimer += delta;
-        if (this.checkBiomeTimer > 0.5) {
-            this.checkBiomeTimer = 0;
-            this.updateOutfit();
+        // Update Projectiles
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            const p = this.projectiles[i];
+            p.update(delta, this.world, remotePlayers);
+            if (!p.isAlive) {
+                this.projectiles.splice(i, 1);
+            }
         }
-        */
-
-        // Toggle Flight
         if (this.input.isKeyDown('KeyF')) {
             if (!this.flyTogglePressed) {
                 this.isFlying = !this.isFlying;
@@ -200,14 +197,8 @@ export class Player {
             }
         }
 
-        // Update Projectiles
-        for (let i = this.projectiles.length - 1; i >= 0; i--) {
-            const p = this.projectiles[i];
-            p.update(delta, this.world);
-            if (!p.isAlive) {
-                this.projectiles.splice(i, 1);
-            }
-        }
+        // Update Projectiles (Moved to top)
+
 
         // Input Handling
         const mouseMove = this.input.getMouseMovement();
@@ -531,6 +522,14 @@ export class Player {
 
         // Create projectile
         const projectile = new Projectile(this.scene, spawnPos, direction, this.particleSystem, this.soundManager);
+        
+        // Callback for hitting a player
+        projectile.onPlayerHitCallback = (targetId, damage) => {
+            if (this.networkManager) {
+                this.networkManager.sendHit(targetId, damage);
+            }
+        };
+
         this.projectiles.push(projectile);
         
         if (this.soundManager) this.soundManager.playShoot();

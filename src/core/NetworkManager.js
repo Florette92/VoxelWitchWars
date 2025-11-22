@@ -21,6 +21,8 @@ export class NetworkManager {
         this.onTeamAssignedCallback = null;
         this.onPlayerListUpdate = null;
         this.onGameStarted = null;
+        this.onHealthUpdate = null;
+        this.onPlayerDied = null;
     }
 
     async hostGame(customId = null, playerName = "Host") {
@@ -259,6 +261,19 @@ export class NetworkManager {
             case 'teamAssigned':
                 if (this.onTeamAssignedCallback) this.onTeamAssignedCallback(payload);
                 break;
+            case 'playerDamaged':
+                if (payload.id === this.playerId) {
+                    if (this.onHealthUpdate) this.onHealthUpdate(payload.health);
+                }
+                break;
+            case 'playerDied':
+                if (payload.id === this.playerId) {
+                    if (this.onPlayerDied) this.onPlayerDied();
+                } else {
+                    // Maybe show a death message for others?
+                    console.log(`Player ${payload.id} died.`);
+                }
+                break;
         }
     }
 
@@ -276,6 +291,10 @@ export class NetworkManager {
 
     collectCrystal(id) {
         this.send("collectCrystal", id);
+    }
+
+    sendHit(targetId, damage) {
+        this.send("hitPlayer", { targetId, damage });
     }
 
     joinTeam(team) {

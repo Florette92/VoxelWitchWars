@@ -23,7 +23,7 @@ export class Projectile {
         this.scene.add(this.mesh);
     }
 
-    update(delta, world) {
+    update(delta, world, remotePlayers) {
         if (!this.isAlive) return;
 
         this.lifeTime -= delta;
@@ -36,7 +36,19 @@ export class Projectile {
         const distance = move.length();
         const direction = move.clone().normalize();
 
-        // Raycast for collision
+        // 1. Check Player Collision
+        if (remotePlayers) {
+            for (const [id, rp] of remotePlayers) {
+                // Simple sphere check
+                const distToPlayer = this.mesh.position.distanceTo(rp.mesh.position);
+                if (distToPlayer < 1.5) { // Hit radius
+                    this.onHitPlayer(id);
+                    return;
+                }
+            }
+        }
+
+        // 2. Raycast for Block Collision
         const hit = world.raycast(this.mesh.position, direction, distance);
 
         if (hit) {
@@ -53,6 +65,28 @@ export class Projectile {
         }
 
         this.mesh.position.add(move);
+    }
+
+    onHitPlayer(targetId) {
+        // Visual effect
+        if (this.soundManager) this.soundManager.playExplosion(); // Reuse explosion sound for now
+        if (this.particleSystem) {
+            this.particleSystem.emit(this.mesh.position, 0xff0000, 20); // Red particles for blood/hit
+        }
+        
+        // Notify Network
+        // We need access to networkManager here, or return the hit info
+        // Since we don't have networkManager passed in, we can return true or call a callback if we add one.
+        // Better: Pass a callback to update() or constructor.
+        // For now, let's assume the caller handles the return value if we change update to return hit info?
+        // No, update is void usually.
+        // Let's add onHitCallback to the projectile.
+        
+        if (this.onPlayerHitCallback) {
+            this.onPlayerHitCallback(targetId, this.damage);
+        }
+
+        this.destroy();
     }
 
     onHit() {

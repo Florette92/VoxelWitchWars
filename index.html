@@ -89,6 +89,10 @@
     </div>
     <div id="crosshair"></div>
     <div id="ui" style="display: none;">
+      <div id="health-bar-container" style="position: absolute; bottom: 20px; left: 20px; width: 300px; height: 30px; background: #333; border: 2px solid #fff; border-radius: 5px;">
+        <div id="health-bar" style="width: 100%; height: 100%; background: #00ff00; transition: width 0.2s;"></div>
+        <span id="health-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-weight: bold; text-shadow: 1px 1px 2px black;">100 / 100</span>
+      </div>
       <p>WASD to move</p>
       <p>Mouse to look</p>
       <p>Click to lock cursor</p>

@@ -74,6 +74,44 @@ networkManager.onTeamAssignedCallback = (data) => {
     soundManager.initWind();
 };
 
+networkManager.onHealthUpdate = (health) => {
+    const healthBar = document.getElementById('health-bar');
+    const healthText = document.getElementById('health-text');
+    if (healthBar && healthText) {
+        healthBar.style.width = `${health}%`;
+        healthText.textContent = `${Math.ceil(health)} / 100`;
+        
+        // Color change based on health
+        if (health > 50) healthBar.style.background = '#00ff00';
+        else if (health > 25) healthBar.style.background = '#ffff00';
+        else healthBar.style.background = '#ff0000';
+    }
+};
+
+networkManager.onPlayerDied = () => {
+    console.log("You Died!");
+    player.onDeath();
+    
+    // Show respawn menu
+    document.getElementById('respawn-menu').style.display = 'flex';
+};
+
+// Respawn Button Logic
+const respawnBtn = document.getElementById('respawn-btn');
+if (respawnBtn) {
+    respawnBtn.addEventListener('click', () => {
+        // Hide menu
+        document.getElementById('respawn-menu').style.display = 'none';
+        
+        // Reset Player State locally (position will be synced by teamAssigned)
+        player.isDead = false;
+        player.health = 100;
+        
+        // Lock cursor again
+        document.body.requestPointerLock();
+    });
+}
+
 // Team Selection UI Logic
 document.querySelectorAll('.team-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -354,7 +392,7 @@ function animate() {
     
     if (gameStarted) {
         if (!minimap) minimap = new MiniMap(world, player);
-        player.update(delta);
+        player.update(delta, remotePlayers);
         world.update(player.position);
         minimap.update();
         particleSystem.update(delta);
