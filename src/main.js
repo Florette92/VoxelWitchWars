@@ -222,24 +222,60 @@ const btnJoin = document.getElementById('btn-join');
 const inputHostId = document.getElementById('input-host-id');
 const inputCustomHostId = document.getElementById('input-custom-host-id');
 
+// Waiting Room Elements
+const waitingRoom = document.getElementById('waiting-room');
+const mainMenuButtons = document.getElementById('main-menu-buttons');
+const playerList = document.getElementById('player-list');
+const startGameBtn = document.getElementById('start-game-btn');
+const waitingMsg = document.getElementById('waiting-msg');
+const lobbyNameDisplay = document.getElementById('lobby-name-display');
+
+// Network Callbacks for Lobby
+networkManager.onPlayerListUpdate = (players) => {
+    playerList.innerHTML = '';
+    players.forEach(pId => {
+        const li = document.createElement('li');
+        li.textContent = pId + (pId === networkManager.playerId ? " (You)" : "");
+        li.style.padding = "5px";
+        li.style.borderBottom = "1px solid rgba(255,255,255,0.1)";
+        playerList.appendChild(li);
+    });
+};
+
+networkManager.onGameStarted = () => {
+    console.log("Game Started!");
+    lobbyMenu.style.display = 'none';
+    startMenu.style.display = 'flex';
+};
+
 if (btnHost) {
     btnHost.addEventListener('click', async () => {
         const customId = inputCustomHostId.value.trim() || null;
         lobbyStatus.textContent = "Initializing Host...";
         try {
             const id = await networkManager.hostGame(customId);
-            lobbyStatus.textContent = `Hosting! ID: ${id}`;
-            // Copy to clipboard
-            navigator.clipboard.writeText(id).then(() => {
-                lobbyStatus.textContent += " (Copied to clipboard)";
-            });
+            lobbyStatus.textContent = ""; // Clear status
             
-            setTimeout(() => {
-                lobbyMenu.style.display = 'none';
-                startMenu.style.display = 'flex';
-            }, 2000);
+            // Show Waiting Room
+            mainMenuButtons.style.display = 'none';
+            waitingRoom.style.display = 'flex';
+            startGameBtn.style.display = 'block';
+            waitingMsg.style.display = 'none';
+            lobbyNameDisplay.textContent = id;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(id);
+            
         } catch (err) {
             lobbyStatus.textContent = "Error: " + err;
+        }
+    });
+}
+
+if (startGameBtn) {
+    startGameBtn.addEventListener('click', () => {
+        if (networkManager.gameHost) {
+            networkManager.gameHost.startGame();
         }
     });
 }
@@ -255,8 +291,15 @@ if (btnJoin) {
         lobbyStatus.textContent = "Connecting...";
         try {
             await networkManager.joinGame(id);
-            lobbyMenu.style.display = 'none';
-            startMenu.style.display = 'flex';
+            lobbyStatus.textContent = "";
+            
+            // Show Waiting Room
+            mainMenuButtons.style.display = 'none';
+            waitingRoom.style.display = 'flex';
+            startGameBtn.style.display = 'none';
+            waitingMsg.style.display = 'block';
+            lobbyNameDisplay.textContent = id;
+            
         } catch (err) {
             lobbyStatus.textContent = "Error: " + err;
         }

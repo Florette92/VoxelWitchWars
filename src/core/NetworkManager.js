@@ -19,6 +19,8 @@ export class NetworkManager {
         this.onCrystalCollectedCallback = null;
         this.onScoreUpdate = null;
         this.onTeamAssignedCallback = null;
+        this.onPlayerListUpdate = null;
+        this.onGameStarted = null;
     }
 
     async hostGame(customId = null) {
@@ -182,6 +184,16 @@ export class NetworkManager {
         const { type, payload } = data;
         
         switch (type) {
+            case 'playerListUpdate':
+                if (this.onPlayerListUpdate) {
+                    this.onPlayerListUpdate(payload);
+                }
+                break;
+            case 'gameStarted':
+                if (this.onGameStarted) {
+                    this.onGameStarted();
+                }
+                break;
             case 'init':
                 // Handle Local Player Init (Team assignment)
                 if (payload.players[this.playerId]) {

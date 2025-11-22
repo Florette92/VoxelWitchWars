@@ -33,12 +33,24 @@ export class GameHost {
             crystals: this.crystals,
             scores: this.scores
         });
+
+        this.broadcastPlayerList();
     }
 
     removePlayer(id) {
         console.log('Host: Player disconnected:', id);
         delete this.players[id];
         this.networkManager.broadcast('playerLeft', id);
+        this.broadcastPlayerList();
+    }
+
+    broadcastPlayerList() {
+        const playerList = Object.keys(this.players);
+        this.networkManager.broadcast('playerListUpdate', playerList);
+    }
+
+    startGame() {
+        this.networkManager.broadcast('gameStarted', {});
     }
 
     handleMessage(id, type, data) {
