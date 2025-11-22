@@ -412,3 +412,24 @@ button.start-game {
     font-size: 1rem;
     min-height: 1.5em;
 }
+
+/* Start Screen Art */
+.start-art {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 800px;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.start-art img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
