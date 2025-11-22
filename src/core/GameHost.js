@@ -100,6 +100,9 @@ export class GameHost {
             case 'captureFlag':
                 this.handleCaptureFlag(id);
                 break;
+            case 'requestRestart':
+                this.resetGame();
+                break;
         }
     }
 
@@ -288,7 +291,7 @@ export class GameHost {
         if (this.scores.red >= 3 || this.scores.blue >= 3) {
             let winner = this.scores.red >= 3 ? 'red' : 'blue';
             this.networkManager.broadcast('gameOver', { winner: winner });
-            setTimeout(() => this.resetGame(), 5000);
+            // Removed automatic reset
         }
     }
 

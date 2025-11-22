@@ -281,6 +281,68 @@ networkManager.onScoreUpdate = (scores) => {
     updateScoreUI(scores);
 };
 
+networkManager.onGameOver = (data) => {
+    const screen = document.getElementById('game-over-screen');
+    const title = document.getElementById('game-over-title');
+    const msg = document.getElementById('game-over-msg');
+    
+    if (screen && title && msg) {
+        screen.classList.remove('hidden');
+        screen.style.display = 'flex'; // Ensure flex display
+        
+        const myTeam = player.team;
+        const winner = data.winner;
+        
+        if (myTeam === winner) {
+            title.textContent = "VICTORY";
+            title.style.color = "#ffff00"; // Gold
+            msg.textContent = `${winner.toUpperCase()} TEAM WINS!`;
+            soundManager.playExplosion(); // Victory sound
+        } else {
+            title.textContent = "DEFEAT";
+            title.style.color = "#ff0000"; // Red
+            msg.textContent = `${winner.toUpperCase()} TEAM WINS!`;
+        }
+        
+        // Unlock cursor
+        document.exitPointerLock();
+    }
+};
+
+networkManager.onGameReset = (data) => {
+    // Hide game over screen
+    const screen = document.getElementById('game-over-screen');
+    if (screen) {
+        screen.classList.add('hidden');
+        screen.style.display = 'none';
+    }
+    
+    // Reset local state
+    updateScoreUI(data.scores);
+    if (networkManager.onCrystalsInit) networkManager.onCrystalsInit(data.crystals);
+    
+    // Respawn player at base
+    player.health = 100;
+    player.isDead = false;
+    
+    let spawn = new THREE.Vector3(0, 32, 0);
+    if (player.team === 'blue') spawn.set(-150, 32, 150);
+    else if (player.team === 'red') spawn.set(-150, 32, -150);
+    
+    player.mesh.position.copy(spawn);
+    player.physicsPosition.copy(spawn);
+    player.velocity.set(0, 0, 0);
+    
+    addChatMessage("System", "Game has been reset!", true);
+};
+
+const btnPlayAgain = document.getElementById('play-again-btn');
+if (btnPlayAgain) {
+    btnPlayAgain.addEventListener('click', () => {
+        networkManager.send('requestRestart', {});
+    });
+}
+
 function updateScoreUI(scores) {
     const scoreDiv = document.getElementById('score-ui');
     if (scoreDiv) {
