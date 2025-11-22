@@ -335,40 +335,6 @@ button.start-game {
   50% { opacity: 0.5; }
 }
 
-.witch-container {
-  position: absolute;
-  bottom: 10%;
-  left: 10%;
-  width: 300px;
-  height: 300px;
-  /* Placeholder for Witch Art */
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px dashed #a020f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 0.8rem;
-  z-index: 1;
-}
-
-.castle-container {
-  position: absolute;
-  bottom: 15%;
-  right: 10%;
-  width: 350px;
-  height: 350px;
-  /* Placeholder for Castle Art */
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px dashed #a020f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 0.8rem;
-  z-index: 1;
-}
-
 /* Stars background */
 .stars {
   position: absolute;
