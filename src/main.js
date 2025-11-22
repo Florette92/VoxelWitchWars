@@ -336,6 +336,10 @@ if (btnHost) {
             hide(waitingMsg);
             lobbyNameDisplay.textContent = id;
             
+            // Show Chat
+            if (chatContainer) chatContainer.classList.remove('hidden');
+            addChatMessage("System", "Lobby created. Waiting for players...", true);
+
             // Copy to clipboard
             navigator.clipboard.writeText(id);
             
@@ -374,6 +378,10 @@ if (btnJoin) {
             hide(startGameBtn);
             show(waitingMsg);
             lobbyNameDisplay.textContent = id;
+            
+            // Show Chat
+            if (chatContainer) chatContainer.classList.remove('hidden');
+            addChatMessage("System", "Connected to lobby.", true);
             
         } catch (err) {
             lobbyStatus.textContent = "Error: " + err;

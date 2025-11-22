@@ -221,7 +221,7 @@ button.start-game {
 /* Health Bar */
 #health-bar-container {
     position: absolute;
-    bottom: 30px;
+    bottom: 250px; /* Moved up from 30px to avoid chat box */
     left: 30px;
     width: 350px;
     height: 40px;
