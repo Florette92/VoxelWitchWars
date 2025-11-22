@@ -62,9 +62,9 @@ networkManager.onTeamAssignedCallback = (data) => {
     const scoreUI = document.getElementById('score-ui');
     
     console.log("Hiding start menu, showing UI");
-    startMenu.style.display = 'none';
-    ui.style.display = 'block';
-    scoreUI.style.display = 'block';
+    if (startMenu) startMenu.classList.add('hidden');
+    if (ui) ui.style.display = 'block';
+    if (scoreUI) scoreUI.style.display = 'block';
     gameStarted = true;
     
     // Lock cursor
@@ -82,9 +82,10 @@ networkManager.onHealthUpdate = (health) => {
         healthText.textContent = `${Math.ceil(health)} / 100`;
         
         // Color change based on health
-        if (health > 50) healthBar.style.background = '#00ff00';
-        else if (health > 25) healthBar.style.background = '#ffff00';
-        else healthBar.style.background = '#ff0000';
+        healthBar.className = ''; // Reset classes
+        if (health > 50) healthBar.classList.add('high');
+        else if (health > 25) healthBar.classList.add('medium');
+        else healthBar.classList.add('low');
     }
 };
 
@@ -292,24 +293,30 @@ const startGameBtn = document.getElementById('start-game-btn');
 const waitingMsg = document.getElementById('waiting-msg');
 const lobbyNameDisplay = document.getElementById('lobby-name-display');
 
+// Helper to toggle visibility
+const show = (el) => el && el.classList.remove('hidden');
+const hide = (el) => el && el.classList.add('hidden');
+
 // Network Callbacks for Lobby
 networkManager.onPlayerListUpdate = (players) => {
     playerList.innerHTML = '';
     players.forEach(p => {
         const li = document.createElement('li');
         const isMe = p.id === networkManager.playerId;
-        li.textContent = `${p.name} ${isMe ? "(You)" : ""}`;
-        li.style.padding = "5px";
-        li.style.borderBottom = "1px solid rgba(255,255,255,0.1)";
-        if (isMe) li.style.fontWeight = "bold";
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'name';
+        nameSpan.textContent = `${p.name} ${isMe ? " (You)" : ""}`;
+        
+        li.appendChild(nameSpan);
         playerList.appendChild(li);
     });
 };
 
 networkManager.onGameStarted = () => {
     console.log("Game Started!");
-    lobbyMenu.style.display = 'none';
-    startMenu.style.display = 'flex';
+    hide(lobbyMenu);
+    show(startMenu);
 };
 
 if (btnHost) {
@@ -323,10 +330,10 @@ if (btnHost) {
             lobbyStatus.textContent = ""; // Clear status
             
             // Show Waiting Room
-            mainMenuButtons.style.display = 'none';
-            waitingRoom.style.display = 'flex';
-            startGameBtn.style.display = 'block';
-            waitingMsg.style.display = 'none';
+            hide(mainMenuButtons);
+            show(waitingRoom);
+            show(startGameBtn);
+            hide(waitingMsg);
             lobbyNameDisplay.textContent = id;
             
             // Copy to clipboard
@@ -362,10 +369,10 @@ if (btnJoin) {
             lobbyStatus.textContent = "";
             
             // Show Waiting Room
-            mainMenuButtons.style.display = 'none';
-            waitingRoom.style.display = 'flex';
-            startGameBtn.style.display = 'none';
-            waitingMsg.style.display = 'block';
+            hide(mainMenuButtons);
+            show(waitingRoom);
+            hide(startGameBtn);
+            show(waitingMsg);
             lobbyNameDisplay.textContent = id;
             
         } catch (err) {
@@ -382,15 +389,6 @@ let gameStarted = false;
 // Add Score UI
 const scoreUI = document.createElement('div');
 scoreUI.id = 'score-ui';
-scoreUI.style.position = 'absolute';
-scoreUI.style.top = '20px';
-scoreUI.style.left = '50%';
-scoreUI.style.transform = 'translateX(-50%)';
-scoreUI.style.color = 'white';
-scoreUI.style.fontSize = '24px';
-scoreUI.style.fontWeight = 'bold';
-scoreUI.style.textShadow = '2px 2px 4px #000';
-scoreUI.style.display = 'none';
 document.body.appendChild(scoreUI);
 
 // Remove old listener if it exists (it was replaced above, but just to be safe regarding the old button code)
