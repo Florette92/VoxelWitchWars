@@ -22,6 +22,51 @@
         padding: 20px;
         box-sizing: border-box;
       }
+
+      /* Start Screen Styles */
+      .start-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('path/to/your/background-image.jpg') no-repeat center center fixed;
+        background-size: cover;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        z-index: 10000;
+      }
+
+      .start-title {
+        font-size: 4rem;
+        color: #fff;
+        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+        margin: 0;
+      }
+
+      .start-btn {
+        padding: 15px 30px;
+        font-size: 1.5rem;
+        color: #fff;
+        background: linear-gradient(90deg, rgba(255,68,68,1) 0%, rgba(255,165,0,1) 100%);
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: background 0.3s, transform 0.3s;
+      }
+
+      .start-btn:hover {
+        background: linear-gradient(90deg, rgba(255,165,0,1) 0%, rgba(255,68,68,1) 100%);
+        transform: scale(1.05);
+      }
+
+      .start-art {
+        margin-top: 30px;
+        /* Add any additional styles for the art section */
+      }
     </style>
     <script>
       window.onerror = function(msg, url, line, col, error) {
@@ -42,8 +87,8 @@
         }
       };
     </script>
-    <script type="module" crossorigin src="./assets/index-Cf8MGSlA.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Dg3kZyDa.css">
+    <script type="module" crossorigin src="./assets/index-Dsj0qIkP.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-ARcVjY-f.css">
   </head>
   <body>
     <!-- Error Overlay -->
@@ -51,6 +96,18 @@
       <h1>Game Error</h1>
       <div id="error-content" style="background: #222; padding: 20px; border: 1px solid red; max-width: 800px; overflow: auto; width: 100%;"></div>
       <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #ff4444; color: white; border: none; cursor: pointer;">Reload</button>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="start-screen">
+      <div class="start-bg"></div>
+      <div class="start-content">
+        <h1 class="start-title">VOXEL WITCH WARS</h1>
+        <button id="start-btn" class="start-btn">PRESS START</button>
+        <div class="start-art">
+          <!-- You can add pixel art images here if available -->
+        </div>
+      </div>
     </div>
 
     <!-- Game UI -->
