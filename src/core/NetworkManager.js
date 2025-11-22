@@ -23,10 +23,19 @@ export class NetworkManager {
 
     async hostGame(customId = null) {
         this.isHost = true;
+        const config = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                ]
+            }
+        };
+
         if (customId) {
-            this.peer = new Peer(customId);
+            this.peer = new Peer(customId, config);
         } else {
-            this.peer = new Peer(); // Auto-generate ID
+            this.peer = new Peer(undefined, config); // Auto-generate ID
         }
         
         return new Promise((resolve, reject) => {
@@ -59,7 +68,15 @@ export class NetworkManager {
 
     async joinGame(hostId) {
         this.isHost = false;
-        this.peer = new Peer();
+        const config = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                ]
+            }
+        };
+        this.peer = new Peer(undefined, config);
 
         return new Promise((resolve, reject) => {
             this.peer.on('open', (id) => {
