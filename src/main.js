@@ -60,11 +60,13 @@ networkManager.onTeamAssignedCallback = (data) => {
     const startMenu = document.getElementById('start-menu');
     const ui = document.getElementById('ui');
     const scoreUI = document.getElementById('score-ui');
+    const minimapCanvas = document.getElementById('minimap');
     
     console.log("Hiding start menu, showing UI");
     if (startMenu) startMenu.classList.add('hidden');
     if (ui) ui.style.display = 'block';
     if (scoreUI) scoreUI.style.display = 'block';
+    if (minimapCanvas) minimapCanvas.classList.remove('hidden');
     gameStarted = true;
     
     // Lock cursor
