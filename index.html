@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="icon" type="image/svg+xml" href="vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voxel Witch Wars</title>
+    <style>
+      body { margin: 0; overflow: hidden; }
+      canvas { display: block; }
+      #ui {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: white;
+        font-family: monospace;
+        pointer-events: none;
+      }
+      #crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+      }
+      #crosshair::before, #crosshair::after {
+        content: '';
+        position: absolute;
+        background: rgba(255, 255, 255, 0.8);
+      }
+      #crosshair::before {
+        top: 9px;
+        left: 0;
+        width: 20px;
+        height: 2px;
+      }
+      #crosshair::after {
+        top: 0;
+        left: 9px;
+        width: 2px;
+        height: 20px;
+      }
+      #error-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        color: red;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        font-family: monospace;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+    </style>
+    <script>
+      window.onerror = function(msg, url, line, col, error) {
+        const overlay = document.getElementById('error-overlay');
+        const content = document.getElementById('error-content');
+        if (overlay && content) {
+          overlay.style.display = 'flex';
+          content.innerHTML += `<div>Error: ${msg}<br>File: ${url}:${line}:${col}<br>Stack: ${error ? error.stack : 'N/A'}</div><hr>`;
+        }
+        return false;
+      };
+      window.onunhandledrejection = function(event) {
+        const overlay = document.getElementById('error-overlay');
+        const content = document.getElementById('error-content');
+        if (overlay && content) {
+          overlay.style.display = 'flex';
+          content.innerHTML += `<div>Promise Rejection: ${event.reason}</div><hr>`;
+        }
+      };
+    </script>
+  </head>
+  <body>
+    <div id="error-overlay">
+      <h1>Game Error</h1>
+      <div id="error-content" style="background: #222; padding: 20px; border: 1px solid red; max-width: 800px; overflow: auto;"></div>
+      <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px;">Reload</button>
+    </div>
+    <div id="crosshair"></div>
+    <div id="ui" style="display: none;">
+      <p>WASD to move</p>
+      <p>Mouse to look</p>
+      <p>Click to lock cursor</p>
+      <p>Click to shoot</p>
+      <p>B to toggle Build Mode</p>
+    </div>
+    <div id="lobby-menu" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100;">
+      <h1 style="font-family: 'Cinzel', serif; font-size: 4rem; margin-bottom: 2rem; text-shadow: 0 0 10px #a020f0;">Voxel Witch Wars</h1>
+      
+      <div style="display: flex; gap: 40px;">
+        <!-- Host Section -->
+        <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 10px; text-align: center; width: 300px;">
+          <h2 style="color: #4CAF50;">Create Game</h2>
+          <input type="text" id="input-lobby-name" placeholder="Lobby Name" style="padding: 10px; font-size: 1rem; width: 80%; margin-bottom: 15px; border-radius: 5px; border: none;">
+          <br>
+          <button id="btn-host" style="padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #4CAF50; border: none; color: white; border-radius: 5px; width: 100%;">Create Lobby</button>
+        </div>
+
+        <!-- Join Section -->
+        <div style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 10px; text-align: center; width: 300px;">
+          <h2 style="color: #2196F3;">Join Game</h2>
+          <input type="text" id="input-lobby-code" placeholder="Enter Room Code" style="padding: 10px; font-size: 1rem; width: 80%; margin-bottom: 15px; border-radius: 5px; border: none; text-transform: uppercase;">
+          <br>
+          <button id="btn-join" style="padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #2196F3; border: none; color: white; border-radius: 5px; width: 100%;">Join Lobby</button>
+        </div>
+      </div>
+
+      <!-- Lobby List -->
+      <div id="lobby-list-container" style="margin-top: 30px; width: 640px; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.5); border-radius: 5px; padding: 10px;">
+        <h3 style="margin-top: 0; border-bottom: 1px solid #555; padding-bottom: 5px;">Available Lobbies</h3>
+        <div id="lobby-list" style="display: flex; flex-direction: column; gap: 5px;">
+          <div style="color: #aaa; font-style: italic;">Searching for lobbies...</div>
+        </div>
+      </div>
+      
+      <div id="lobby-status" style="margin-top: 20px; color: #ffcc00; font-size: 1.2rem; height: 30px;"></div>
+    </div>
+
+    <div id="start-menu" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 100;">
+      <h1 style="font-size: 4rem; margin-bottom: 2rem; text-shadow: 0 0 10px #a020f0;">Voxel Witch Wars</h1>
+      <h2 id="team-display">Select Your Team</h2>
+      <div id="team-select" style="display: flex; gap: 20px; margin-top: 20px;">
+        <button class="team-btn" data-team="blue" style="padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #0000ff; border: none; color: white; border-radius: 5px;">Ice (Blue)</button>
+        <button class="team-btn" data-team="red" style="padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #ff0000; border: none; color: white; border-radius: 5px;">Fire (Red)</button>
+      </div>
+      <div id="loading-msg" style="display: none; margin-top: 20px;">Joining...</div>
+    </div>
+    <div id="respawn-menu" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; text-align: center; color: white; z-index: 100;">
+      <h2>You Fell into the Void!</h2>
+      <button id="respawn-btn" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Respawn</button>
+    </div>
+    <canvas id="minimap" width="200" height="200" style="position: absolute; top: 10px; right: 10px; border: 2px solid #444; background: #000; border-radius: 50%; opacity: 0.9; z-index: 100;"></canvas>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
