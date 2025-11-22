@@ -36,11 +36,51 @@ export class RemotePlayer {
         hatCone.rotation.x = -0.2;
         this.mesh.add(hatCone);
 
+        // Name Tag
+        const name = data.name || "Unknown";
+        const nameSprite = this.createNameSprite(name);
+        nameSprite.position.y = 3.0;
+        this.mesh.add(nameSprite);
+
         this.scene.add(this.mesh);
 
         // Interpolation targets
         this.targetPos = new THREE.Vector3(data.x, data.y, data.z);
         this.targetRot = new THREE.Euler(data.rx, data.ry, 0);
+    }
+
+    createNameSprite(name) {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        const fontSize = 24;
+        const font = `bold ${fontSize}px Arial`;
+        
+        context.font = font;
+        const textWidth = context.measureText(name).width;
+        
+        canvas.width = textWidth + 20;
+        canvas.height = fontSize + 10;
+        
+        // Background (optional, semi-transparent black)
+        context.fillStyle = "rgba(0, 0, 0, 0.5)";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Text
+        context.font = font;
+        context.fillStyle = "white";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(name, canvas.width / 2, canvas.height / 2);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        const material = new THREE.SpriteMaterial({ map: texture });
+        const sprite = new THREE.Sprite(material);
+        
+        // Scale sprite to match text size
+        const scale = 0.05;
+        sprite.scale.set(canvas.width * scale, canvas.height * scale, 1);
+        
+        return sprite;
     }
 
     update(delta) {
