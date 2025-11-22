@@ -69,6 +69,10 @@ export class GameHost {
             case 'hitPlayer':
                 this.handleHitPlayer(id, data);
                 break;
+            case 'chat':
+                // Broadcast chat message to everyone
+                this.networkManager.broadcast('chat', data);
+                break;
         }
     }
 

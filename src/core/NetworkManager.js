@@ -14,6 +14,7 @@ export class NetworkManager {
         this.isHost = false;
         this.gameHost = null;
         this.playerId = null;
+        this.playerName = "Player";
         
         // Callbacks
         this.onLocalPlayerInit = null;
@@ -34,6 +35,7 @@ export class NetworkManager {
 
     async hostGame(customId = null, playerName = "Host") {
         this.isHost = true;
+        this.playerName = playerName;
         const config = {
             config: {
                 iceServers: [
@@ -104,6 +106,7 @@ export class NetworkManager {
 
     async joinGame(hostId, playerName = "Player") {
         this.isHost = false;
+        this.playerName = playerName;
         const config = {
             config: {
                 iceServers: [
@@ -393,7 +396,7 @@ export class NetworkManager {
     sendChat(message) {
         this.send("chat", {
             id: this.playerId,
-            name: this.gameHost ? this.gameHost.players.get(this.playerId).name : "Player", // Basic name fallback
+            name: this.playerName,
             message: message,
             timestamp: Date.now()
         });
