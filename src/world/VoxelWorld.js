@@ -171,6 +171,8 @@ export class VoxelWorld {
                 let windowColor = 0xFFFF00; // Glowing Yellow
                 let rimColor = 0x5C4033; // Dark Wood/Stone for rims
                 let hatBandColor = 0xFFA500; // Orange
+                let waterColor = 0x4444ff;
+                let foamColor = 0x8888ff;
 
                 if (biome === 'ice') {
                     grassColor = 0xFFFFFF; // Snow
@@ -185,6 +187,8 @@ export class VoxelWorld {
                     windowColor = 0xAAFFFF; // Cyan Glow
                     rimColor = 0x223344;
                     hatBandColor = 0xFFFFFF; // White Band
+                    waterColor = 0x88ccff; // Icy Water
+                    foamColor = 0xccffff;
                 } else if (biome === 'arcane') {
                     grassColor = 0x4B0082; // Indigo
                     dirtColor = 0x2E2B5F; // Dark Purple
@@ -211,6 +215,8 @@ export class VoxelWorld {
                     windowColor = 0xFF4400; // Red/Orange Glow
                     rimColor = 0x440000;
                     hatBandColor = 0xFF0000; // Red
+                    waterColor = 0xcf1020; // Lava
+                    foamColor = 0xff8800; // Bright Lava
                 }
 
                 for (let y = bottomY; y <= maxY + 8; y++) {
@@ -229,7 +235,7 @@ export class VoxelWorld {
                             const bedY = groundY - pondDepth;
                             if (y > bedY) {
                                 // Water
-                                blockColor = 0x4444ff; 
+                                blockColor = waterColor; 
                             } else {
                                 // Ground below pond
                                 blockColor = dirtColor;
@@ -241,11 +247,11 @@ export class VoxelWorld {
                             
                             if (isWaterfall) {
                                 // Falling water
-                                blockColor = 0x4444ff;
-                                if (Math.random() > 0.8) blockColor = 0x8888ff; // Foam
+                                blockColor = waterColor;
+                                if (Math.random() > 0.8) blockColor = foamColor; // Foam
                             } else if (y > bedY) {
                                 // River water
-                                blockColor = 0x4444ff;
+                                blockColor = waterColor;
                             } else {
                                 // River bed
                                 blockColor = dirtColor;
