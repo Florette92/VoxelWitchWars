@@ -16,6 +16,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "gun": "^0.2020.1241",
     "peerjs": "^1.5.5",
     "simplex-noise": "^4.0.3",
     "three": "^0.181.2"

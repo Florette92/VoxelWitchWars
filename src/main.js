@@ -414,6 +414,73 @@ if (startBtn && startScreen) {
 // The previous replace_string_in_file removed the onLocalPlayerInit block which contained the logic.
 // Now we need to remove the old button listener for 'btn-join' which is no longer in the HTML.
 
+// Lobby List Logic
+const lobbyListContainer = document.getElementById('lobby-list-container');
+const btnRefreshLobbies = document.getElementById('btn-refresh-lobbies');
+const activeLobbies = new Map();
+
+function renderLobbyList() {
+    if (!lobbyListContainer) return;
+    lobbyListContainer.innerHTML = '';
+    if (activeLobbies.size === 0) {
+        lobbyListContainer.innerHTML = '<div style="color: #aaa; font-size: 0.8rem; text-align: center; padding: 20px;">No active lobbies found.<br>Be the first to host!</div>';
+        return;
+    }
+    
+    activeLobbies.forEach((data, id) => {
+        const div = document.createElement('div');
+        div.style.padding = '10px';
+        div.style.borderBottom = '1px solid #444';
+        div.style.cursor = 'pointer';
+        div.style.display = 'flex';
+        div.style.justifyContent = 'space-between';
+        div.style.alignItems = 'center';
+        div.className = 'lobby-item';
+        
+        div.innerHTML = `
+            <div>
+                <div style="font-weight: bold; color: #fff;">${data.name || id}</div>
+                <div style="font-size: 0.8rem; color: #aaa;">ID: ${id}</div>
+            </div>
+            <div style="font-size: 0.8rem; color: #00ffff;">${data.players || '?'} Players</div>
+        `;
+        
+        div.addEventListener('click', () => {
+            if (inputHostId) inputHostId.value = id;
+            // Highlight selection
+            Array.from(lobbyListContainer.children).forEach(c => c.style.background = 'transparent');
+            div.style.background = 'rgba(160, 32, 240, 0.3)';
+        });
+        
+        div.addEventListener('mouseenter', () => {
+            if (div.style.background !== 'rgba(160, 32, 240, 0.3)') div.style.background = 'rgba(255, 255, 255, 0.1)';
+        });
+        div.addEventListener('mouseleave', () => {
+            if (div.style.background !== 'rgba(160, 32, 240, 0.3)') div.style.background = 'transparent';
+        });
+        
+        lobbyListContainer.appendChild(div);
+    });
+}
+
+// Subscribe to lobbies
+networkManager.subscribeToLobbies((id, data) => {
+    if (data) {
+        activeLobbies.set(id, data);
+    } else {
+        activeLobbies.delete(id);
+    }
+    renderLobbyList();
+});
+
+if (btnRefreshLobbies) {
+    btnRefreshLobbies.addEventListener('click', () => {
+        activeLobbies.clear();
+        lobbyListContainer.innerHTML = '<div style="color: #aaa; font-size: 0.8rem; text-align: center; padding: 20px;">Refreshing...</div>';
+        // GunDB will push updates again automatically
+    });
+}
+
 // Handle Window Resize
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;

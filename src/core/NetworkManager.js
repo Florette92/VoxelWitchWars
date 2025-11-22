@@ -1,9 +1,14 @@
 import { Peer } from "peerjs";
+import Gun from "gun";
 import { GameHost } from "./GameHost.js";
 
 export class NetworkManager {
     constructor() {
         this.peer = null;
+        this.gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+        this.lobbies = this.gun.get('voxelwitchwars').get('lobbies');
+        this.lobbyHeartbeat = null;
+
         this.conn = null; // Connection to Host (if client)
         this.connections = []; // Connections to Clients (if host)
         this.isHost = false;
@@ -67,6 +72,7 @@ export class NetworkManager {
                     this.gameHost.addPlayer(id, playerName); // Add self with name
                     
                     this.showConnectionStatus(true, `Hosting: ${id}`);
+                    this.publishLobby(id, customId || (playerName + "'s Game"));
                     resolve(id);
                 } catch (err) {
                     console.error("GameHost Init Error:", err);
@@ -340,5 +346,43 @@ export class NetworkManager {
             statusDiv.style.backgroundColor = "rgba(255, 0, 0, 0.8)";
             statusDiv.style.color = "white";
         }
+    }
+
+    // Lobby System
+    publishLobby(id, name) {
+        console.log("Publishing lobby:", name);
+        const updateLobby = () => {
+            this.lobbies.get(id).put({
+                id: id,
+                name: name,
+                players: this.connections ? this.connections.length + 1 : 1,
+                timestamp: Date.now()
+            });
+        };
+        
+        updateLobby();
+        this.lobbyHeartbeat = setInterval(updateLobby, 2000);
+        
+        // Cleanup on unload
+        window.addEventListener('beforeunload', () => {
+            this.stopPublishingLobby(id);
+        });
+    }
+
+    stopPublishingLobby(id) {
+        if (this.lobbyHeartbeat) clearInterval(this.lobbyHeartbeat);
+        this.lobbies.get(id).put(null);
+    }
+
+    subscribeToLobbies(callback) {
+        console.log("Subscribing to lobbies...");
+        this.lobbies.map().on((data, id) => {
+            // Filter out old lobbies (older than 5 seconds) or nulls
+            if (data && data.timestamp > Date.now() - 5000) {
+                callback(id, data);
+            } else {
+                callback(id, null); // Signal to remove
+            }
+        });
     }
 }
