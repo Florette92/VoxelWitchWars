@@ -23,7 +23,7 @@ export class NetworkManager {
         this.onGameStarted = null;
     }
 
-    async hostGame(customId = null) {
+    async hostGame(customId = null, playerName = "Host") {
         this.isHost = true;
         const config = {
             config: {
@@ -61,7 +61,7 @@ export class NetworkManager {
                 try {
                     this.gameHost = new GameHost(this);
                     this.gameHost.init();
-                    this.gameHost.addPlayer(id); // Add self
+                    this.gameHost.addPlayer(id, playerName); // Add self with name
                     
                     this.showConnectionStatus(true, `Hosting: ${id}`);
                     resolve(id);
@@ -92,7 +92,7 @@ export class NetworkManager {
         });
     }
 
-    async joinGame(hostId) {
+    async joinGame(hostId, playerName = "Player") {
         this.isHost = false;
         const config = {
             config: {
@@ -109,7 +109,9 @@ export class NetworkManager {
                 this.playerId = id;
                 console.log('My peer ID is: ' + id);
                 
-                this.conn = this.peer.connect(hostId);
+                this.conn = this.peer.connect(hostId, {
+                    metadata: { name: playerName }
+                });
                 
                 this.conn.on('open', () => {
                     console.log("Connected to Host");
@@ -144,7 +146,8 @@ export class NetworkManager {
         this.connections.push(conn);
         
         conn.on('open', () => {
-            this.gameHost.addPlayer(conn.peer);
+            const playerName = conn.metadata && conn.metadata.name ? conn.metadata.name : "Unknown";
+            this.gameHost.addPlayer(conn.peer, playerName);
         });
 
         conn.on('data', (data) => {

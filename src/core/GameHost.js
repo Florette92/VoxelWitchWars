@@ -16,10 +16,11 @@ export class GameHost {
         this.crystals.forEach(c => c.active = true);
     }
 
-    addPlayer(id) {
-        console.log('Host: Player connected:', id);
+    addPlayer(id, name = "Unknown") {
+        console.log('Host: Player connected:', id, name);
         this.players[id] = {
             id: id,
+            name: name,
             x: 0, y: 0, z: 0,
             rx: 0, ry: 0,
             team: 'spectator',
@@ -45,7 +46,7 @@ export class GameHost {
     }
 
     broadcastPlayerList() {
-        const playerList = Object.keys(this.players);
+        const playerList = Object.values(this.players).map(p => ({ id: p.id, name: p.name }));
         this.networkManager.broadcast('playerListUpdate', playerList);
     }
 

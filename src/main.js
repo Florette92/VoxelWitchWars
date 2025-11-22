@@ -221,6 +221,7 @@ const btnHost = document.getElementById('btn-host');
 const btnJoin = document.getElementById('btn-join');
 const inputHostId = document.getElementById('input-host-id');
 const inputCustomHostId = document.getElementById('input-custom-host-id');
+const inputPlayerName = document.getElementById('input-player-name');
 
 // Waiting Room Elements
 const waitingRoom = document.getElementById('waiting-room');
@@ -233,11 +234,13 @@ const lobbyNameDisplay = document.getElementById('lobby-name-display');
 // Network Callbacks for Lobby
 networkManager.onPlayerListUpdate = (players) => {
     playerList.innerHTML = '';
-    players.forEach(pId => {
+    players.forEach(p => {
         const li = document.createElement('li');
-        li.textContent = pId + (pId === networkManager.playerId ? " (You)" : "");
+        const isMe = p.id === networkManager.playerId;
+        li.textContent = `${p.name} ${isMe ? "(You)" : ""}`;
         li.style.padding = "5px";
         li.style.borderBottom = "1px solid rgba(255,255,255,0.1)";
+        if (isMe) li.style.fontWeight = "bold";
         playerList.appendChild(li);
     });
 };
@@ -251,9 +254,11 @@ networkManager.onGameStarted = () => {
 if (btnHost) {
     btnHost.addEventListener('click', async () => {
         const customId = inputCustomHostId.value.trim() || null;
+        const playerName = inputPlayerName.value.trim() || "Host";
+        
         lobbyStatus.textContent = "Initializing Host...";
         try {
-            const id = await networkManager.hostGame(customId);
+            const id = await networkManager.hostGame(customId, playerName);
             lobbyStatus.textContent = ""; // Clear status
             
             // Show Waiting Room
@@ -283,6 +288,8 @@ if (startGameBtn) {
 if (btnJoin) {
     btnJoin.addEventListener('click', async () => {
         const id = inputHostId.value.trim();
+        const playerName = inputPlayerName.value.trim() || "Player";
+
         if (!id) {
             lobbyStatus.textContent = "Please enter a Host ID";
             return;
@@ -290,7 +297,7 @@ if (btnJoin) {
         
         lobbyStatus.textContent = "Connecting...";
         try {
-            await networkManager.joinGame(id);
+            await networkManager.joinGame(id, playerName);
             lobbyStatus.textContent = "";
             
             // Show Waiting Room
