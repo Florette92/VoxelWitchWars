@@ -721,6 +721,16 @@ if (chatInput) {
     });
 }
 
+// Global Key Listener for Chat
+document.addEventListener('keydown', (e) => {
+    if ((e.key === 't' || e.key === 'T') && document.activeElement !== chatInput && document.activeElement.tagName !== 'INPUT') {
+        if (chatInput && !chatContainer.classList.contains('hidden')) {
+            e.preventDefault(); // Prevent typing 't'
+            chatInput.focus();
+        }
+    }
+});
+
 // Handle Window Resize
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;

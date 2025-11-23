@@ -307,7 +307,7 @@ button.start-game {
 /* Health Bar */
 #health-bar-container {
     position: absolute;
-    bottom: 250px; /* Moved up from 30px to avoid chat box */
+    bottom: 300px; /* Moved up to avoid chat box */
     left: 30px;
     width: 350px;
     height: 40px;
@@ -346,7 +346,7 @@ button.start-game {
 /* Mana Bar */
 #mana-bar-container {
     position: absolute;
-    bottom: 200px; /* Below health bar */
+    bottom: 250px; /* Below health bar */
     left: 30px;
     width: 350px;
     height: 30px;
