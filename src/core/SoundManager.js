@@ -79,21 +79,76 @@ export class SoundManager {
     playExplosion() {
         if (this.ctx.state === 'suspended') this.ctx.resume();
         
+        // Noise burst for explosion
+        const bufferSize = this.ctx.sampleRate * 0.5; // 0.5 seconds
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const noiseFilter = this.ctx.createBiquadFilter();
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.setValueAtTime(1000, this.ctx.currentTime);
+        noiseFilter.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.3);
+
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(this.masterGain);
+        
+        noise.start();
+    }
+
+    playHit() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+
+        // "Oof" / Impact sound
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-        
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(100, this.ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-        
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.1);
+
         gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-        
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+
         osc.connect(gain);
         gain.connect(this.masterGain);
-        
+
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.3);
+        osc.stop(this.ctx.currentTime + 0.1);
+    }
+
+    playImpact() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+
+        // Short noise click for wall hit
+        const bufferSize = this.ctx.sampleRate * 0.1;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+
+        noise.connect(gain);
+        gain.connect(this.masterGain);
+
+        noise.start();
     }
 
     playPowerup() {

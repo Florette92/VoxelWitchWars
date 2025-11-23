@@ -110,19 +110,12 @@ export class Projectile {
 
     onHitPlayer(targetId) {
         // Visual effect
-        if (this.soundManager) this.soundManager.playExplosion(); // Reuse explosion sound for now
+        if (this.soundManager) this.soundManager.playHit(); 
         if (this.particleSystem) {
             this.particleSystem.emit(this.mesh.position, 0xff0000, 20); // Red particles for blood/hit
         }
         
         // Notify Network
-        // We need access to networkManager here, or return the hit info
-        // Since we don't have networkManager passed in, we can return true or call a callback if we add one.
-        // Better: Pass a callback to update() or constructor.
-        // For now, let's assume the caller handles the return value if we change update to return hit info?
-        // No, update is void usually.
-        // Let's add onHitCallback to the projectile.
-        
         if (this.onPlayerHitCallback) {
             this.onPlayerHitCallback(targetId, this.damage);
         }
@@ -132,7 +125,13 @@ export class Projectile {
 
     onHit() {
         // Visual effect for hit
-        if (this.soundManager) this.soundManager.playExplosion();
+        if (this.soundManager) {
+            if (this.type === 'fireball') {
+                this.soundManager.playExplosion();
+            } else {
+                this.soundManager.playImpact();
+            }
+        }
         if (this.particleSystem) {
             this.particleSystem.emit(this.mesh.position, 0x00ffff, 15);
         }

@@ -124,8 +124,6 @@ export class Player {
         if (this.characterClass === className) return;
         
         this.characterClass = className;
-        const oldPosition = this.mesh.position.clone();
-        const oldRotation = this.mesh.rotation.clone();
         
         // Remove old mesh
         this.scene.remove(this.mesh);
@@ -134,23 +132,20 @@ export class Player {
         const charData = this.characterClass === 'warlock' ? this.createWarlockMesh() : this.createWitchMesh();
         this.mesh = charData.mesh;
         
-        // Restore transform
-        this.mesh.position.copy(oldPosition);
-        this.mesh.rotation.copy(oldRotation);
+        // Restore position
+        this.mesh.position.copy(this.physicsPosition);
+        this.mesh.rotation.y = this.cameraRotation.y;
         
-        // Re-setup attachments
-        // Wand
-        this.wand = this.createWand();
+        // Re-attach Wand
         charData.leftArm.add(this.wand);
         this.wand.position.set(0, -0.4, 0.2);
         this.wand.rotation.x = Math.PI / 2;
 
-        // Broom
-        this.broom = this.createBroom();
-        this.broom.visible = false;
+        // Re-attach Broom
         this.mesh.add(this.broom);
         this.broom.position.set(0, 0.5, 0);
-        
+        this.broom.visible = this.isFlying;
+
         this.mesh.traverse(c => c.castShadow = true);
         this.scene.add(this.mesh);
     }
@@ -464,6 +459,13 @@ export class Player {
             'normal',
             damageMult
         );
+
+        projectile.onPlayerHitCallback = (targetId, damage) => {
+            if (this.networkManager) {
+                this.networkManager.sendHit(targetId, damage);
+            }
+        };
+
         this.projectiles.push(projectile);
         this.soundManager.playShoot();
     }
@@ -484,6 +486,13 @@ export class Player {
                 'fireball',
                 damageMult
             );
+
+            projectile.onPlayerHitCallback = (targetId, damage) => {
+                if (this.networkManager) {
+                    this.networkManager.sendHit(targetId, damage);
+                }
+            };
+
             this.projectiles.push(projectile);
             this.mana -= this.abilityCost;
             this.updateManaUI();

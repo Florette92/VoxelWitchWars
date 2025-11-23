@@ -827,3 +827,11 @@ let minimap = null;
 if (minimapCanvas) {
     minimap = new MiniMap(world, player);
 }
+
+// Local Player Init (for character class and other data)
+networkManager.onLocalPlayerInit = (data) => {
+    console.log("Local Player Init:", data);
+    if (data.characterClass) {
+        player.setCharacterClass(data.characterClass);
+    }
+};

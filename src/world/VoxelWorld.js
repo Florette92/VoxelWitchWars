@@ -271,7 +271,17 @@ export class VoxelWorld {
                         }
                         else {
                              const depthFromSurface = groundY - y;
-                             if (depthFromSurface === 0) blockColor = grassColor; 
+                             if (depthFromSurface === 0) {
+                                blockColor = grassColor; 
+
+                                // Ice Path (From door to edge)
+                                if (biome === 'ice') {
+                                    // Door is at -Z, so path goes -Z
+                                    if (Math.abs(tDx) < 2.5 && tDz < -4 && tDz > -48) {
+                                        blockColor = 0x88CCFF; // Ice Path
+                                    }
+                                }
+                             }
                              else if (depthFromSurface < 4) blockColor = dirtColor; 
                              else blockColor = stoneColor;
                         }
@@ -302,14 +312,16 @@ export class VoxelWorld {
                                             }
                                         }
                                         
+                                        const doorDir = (biome === 'ice') ? -1 : 1;
+
                                         // Door
-                                        if (localY < 5 && tDz > 0 && Math.abs(tDx) < 1.5) {
+                                        if (localY < 5 && (tDz * doorDir) > 0 && Math.abs(tDx) < 1.5) {
                                             if (localY < 4) visible = false; // Open
                                             else blockColor = woodColor; // Wood Arch
                                         }
                                         
                                         // Lanterns (next to door)
-                                        if (localY === 3 && tDz > 0 && Math.abs(tDx) > 2 && Math.abs(tDx) < 3) {
+                                        if (localY === 3 && (tDz * doorDir) > 0 && Math.abs(tDx) > 2 && Math.abs(tDx) < 3) {
                                             visible = true;
                                             blockColor = windowColor; // Lantern
                                         }
