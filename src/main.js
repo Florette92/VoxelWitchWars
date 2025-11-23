@@ -606,6 +606,72 @@ networkManager.onGameStarted = () => {
     }
 };
 
+// Host Game Button
+if (btnHost) {
+    btnHost.addEventListener('click', async () => {
+        const name = inputPlayerName.value || "Player";
+        const customId = inputCustomHostId.value;
+        
+        lobbyStatus.textContent = "Creating lobby...";
+        
+        try {
+            const hostId = await networkManager.hostGame(customId, name, selectedClass);
+            
+            // Show Waiting Room
+            hide(mainMenuButtons);
+            show(waitingRoom);
+            show(startGameBtn); // Host can start game
+            
+            lobbyNameDisplay.textContent = `Lobby ID: ${hostId}`;
+            waitingMsg.textContent = "Waiting for players...";
+            
+        } catch (err) {
+            console.error("Failed to host:", err);
+            lobbyStatus.textContent = "Error: " + err.message;
+        }
+    });
+}
+
+// Join Game Button
+if (btnJoin) {
+    btnJoin.addEventListener('click', async () => {
+        const name = inputPlayerName.value || "Player";
+        const hostId = inputHostId.value;
+        
+        if (!hostId) {
+            lobbyStatus.textContent = "Please enter a Host ID";
+            return;
+        }
+        
+        lobbyStatus.textContent = "Joining lobby...";
+        
+        try {
+            await networkManager.joinGame(hostId, name, selectedClass);
+            
+            // Show Waiting Room
+            hide(mainMenuButtons);
+            show(waitingRoom);
+            hide(startGameBtn); // Only host can start
+            
+            lobbyNameDisplay.textContent = `Lobby ID: ${hostId}`;
+            waitingMsg.textContent = "Connected! Waiting for host to start...";
+            
+        } catch (err) {
+            console.error("Failed to join:", err);
+            lobbyStatus.textContent = "Error: " + err.message;
+        }
+    });
+}
+
+// Start Game Button (Host only)
+if (startGameBtn) {
+    startGameBtn.addEventListener('click', () => {
+        if (networkManager.gameHost) {
+            networkManager.gameHost.startGame();
+        }
+    });
+}
+
 // Class Selection Logic
 let selectedClass = 'witch';
 const btnClassWitch = document.getElementById('btn-class-witch');
