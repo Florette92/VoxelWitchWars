@@ -7,6 +7,23 @@ import { SoundManager } from './core/SoundManager.js';
 import { NetworkManager } from './core/NetworkManager.js';
 import { RemotePlayer } from './gameplay/RemotePlayer.js';
 
+// --- UI SETUP (Run immediately) ---
+const startScreen = document.getElementById('start-screen');
+const startBtn = document.getElementById('start-btn');
+const lobbyMenu = document.getElementById('lobby-menu');
+
+if (startBtn && startScreen) {
+    startBtn.addEventListener('click', () => {
+        console.log('Start button clicked');
+        startScreen.style.display = 'none';
+        if (lobbyMenu) {
+            lobbyMenu.style.display = 'flex';
+            lobbyMenu.classList.remove('hidden');
+        }
+    });
+}
+// ----------------------------------
+
 // Setup Scene
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB); // Sky blue
@@ -434,7 +451,7 @@ const spawnPos = world.findSpawnPoint();
 const player = new Player(scene, camera, world, spawnPos, particleSystem, soundManager, networkManager);
 
 // Lobby Logic
-const lobbyMenu = document.getElementById('lobby-menu');
+// lobbyMenu is defined at the top
 const lobbyStatus = document.getElementById('lobby-status');
 const btnHost = document.getElementById('btn-host');
 const btnJoin = document.getElementById('btn-join');
@@ -555,29 +572,6 @@ let gameStarted = false;
 const scoreUI = document.createElement('div');
 scoreUI.id = 'score-ui';
 document.body.appendChild(scoreUI);
-
-// Start Screen Logic
-const startScreen = document.getElementById('start-screen');
-const startBtn = document.getElementById('start-btn');
-
-console.log('Start Screen Element:', startScreen); 
-console.log('Lobby Menu Element:', lobbyMenu);
-
-if (startBtn && startScreen) {
-    startBtn.addEventListener('click', () => {
-        console.log('Start button clicked');
-        startScreen.style.display = 'none';
-        if (lobbyMenu) {
-            lobbyMenu.style.display = 'flex';
-            lobbyMenu.classList.remove('hidden');
-        } else {
-            console.error("Lobby menu not found!");
-        }
-    });
-    // Show start screen on load
-    startScreen.style.display = 'flex';
-    if (lobbyMenu) lobbyMenu.style.display = 'none';
-}
 
 // Remove old listener if it exists (it was replaced above, but just to be safe regarding the old button code)
 // The previous replace_string_in_file removed the onLocalPlayerInit block which contained the logic.
