@@ -141,7 +141,12 @@ export class VoxelWorld {
                 
                 const tDx = worldX - towerX;
                 const tDz = worldZ - towerZ;
-                const tDist = Math.sqrt(tDx*tDx + tDz*tDz);
+                let tDist = Math.sqrt(tDx*tDx + tDz*tDz);
+                
+                // Square tower for volcanic biome
+                if (closestCenter.type === 'volcanic') {
+                    tDist = Math.max(Math.abs(tDx), Math.abs(tDz));
+                }
                 
                 // Tower Dimensions
                 const towerRadius = 4.5;
@@ -215,20 +220,20 @@ export class VoxelWorld {
                     rimColor = 0x4B0082;
                     hatBandColor = 0x9932CC; // Dark Orchid
                 } else if (biome === 'volcanic') {
-                    grassColor = 0x222222; // Ash
-                    dirtColor = 0x440000; // Magma
-                    stoneColor = 0x111111; // Obsidian
-                    wallColor1 = 0x220000; // Dark Red Stone
-                    wallColor2 = 0x330000;
-                    roofColor1 = 0x111111; // Black
-                    roofColor2 = 0x222222;
-                    woodColor = 0x111111; // Burnt
-                    leafColor = 0xFF4400; // Fire/Ember
+                    grassColor = 0x553311; // Dark Brown/Orange
+                    dirtColor = 0x221111; // Dark Rock
+                    stoneColor = 0x1a1a1a; // Dark Grey/Black
+                    wallColor1 = 0xAAAAAA; // Light Grey Stone
+                    wallColor2 = 0x999999;
+                    roofColor1 = 0x222222; // Dark Grey/Black
+                    roofColor2 = 0x333333;
+                    woodColor = 0x5C4033; // Brown
+                    leafColor = 0xFF4500; // Orange/Red
                     windowColor = 0xFF4400; // Red/Orange Glow
-                    rimColor = 0x440000;
+                    rimColor = 0x888888; // Grey
                     hatBandColor = 0xFF0000; // Red
-                    waterColor = 0xcf1020; // Lava
-                    foamColor = 0xff8800; // Bright Lava
+                    waterColor = 0xFF4500; // Bright Orange/Red
+                    foamColor = 0xFFFF00; // Yellow/White
                 }
 
                 for (let y = bottomY; y <= maxY + 8; y++) {
@@ -359,7 +364,7 @@ export class VoxelWorld {
 
                     // 4. Vegetation (Trees & Mushrooms)
                     if (y > groundY) {
-                        const veg = this.getVegetationBlock(worldX, y, worldZ, groundY);
+                        const veg = this.getVegetationBlock(worldX, y, worldZ, groundY, woodColor, leafColor);
                         if (veg.exists) {
                             visible = true;
                             blockColor = veg.color;
@@ -502,7 +507,11 @@ export class VoxelWorld {
 
             const dx = x - towerX;
             const dz = z - towerZ;
-            const dist = Math.sqrt(dx*dx + dz*dz);
+            let dist = Math.sqrt(dx*dx + dz*dz);
+
+            if (c.type === 'volcanic') {
+                dist = Math.max(Math.abs(dx), Math.abs(dz));
+            }
             
             // Calculate Roof Height
             // Matches generateChunk logic: roof starts at 58, slope is 0.5 radius per 1 height
@@ -601,7 +610,10 @@ export class VoxelWorld {
         const towerZ = c.z;
         const tDx = ix - towerX;
         const tDz = iz - towerZ;
-        const tDist = Math.sqrt(tDx*tDx + tDz*tDz);
+        let tDist = Math.sqrt(tDx*tDx + tDz*tDz);
+        if (c.type === 'volcanic') {
+            tDist = Math.max(Math.abs(tDx), Math.abs(tDz));
+        }
         const isTower = tDist <= 7;
 
         // Pond
@@ -670,7 +682,11 @@ export class VoxelWorld {
         const towerZ = c.z;
         const tDx = ix - towerX;
         const tDz = iz - towerZ;
-        const tDist = Math.sqrt(tDx*tDx + tDz*tDz);
+        let tDist = Math.sqrt(tDx*tDx + tDz*tDz);
+
+        if (c.type === 'volcanic') {
+            tDist = Math.max(Math.abs(tDx), Math.abs(tDz));
+        }
         
         const towerRadius = 4.5;
         const floorHeight = 7;
@@ -847,7 +863,13 @@ export class VoxelWorld {
         const towerZ = c.z;
         const tDx = x - towerX;
         const tDz = z - towerZ;
-        if (tDx*tDx + tDz*tDz <= 49) return '#555555'; // Tower Gray
+        
+        let isTower = (tDx*tDx + tDz*tDz <= 49);
+        if (c.type === 'volcanic') {
+            isTower = (Math.max(Math.abs(tDx), Math.abs(tDz)) <= 7);
+        }
+        
+        if (isTower) return '#555555'; // Tower Gray
 
         // Pond
         const pDx = x - (c.x - 30);
@@ -874,14 +896,14 @@ export class VoxelWorld {
         return h - Math.floor(h);
     }
 
-    getVegetationBlock(x, y, z, groundY) {
+    getVegetationBlock(x, y, z, groundY, woodColor = 0x5C4033, leafColor = 0x228B22) {
         // 1. Legacy Trees (1x1 Columns)
         const treeH = this.getTreeHeight(x, z);
         if (treeH > 0) {
             const localY = y - groundY;
             if (localY > 0) {
-                if (localY <= treeH) return { exists: true, color: 0x5C4033 }; // Wood
-                if (localY <= treeH + 2) return { exists: true, color: 0x228B22 }; // Leaves
+                if (localY <= treeH) return { exists: true, color: woodColor }; // Wood
+                if (localY <= treeH + 2) return { exists: true, color: leafColor }; // Leaves
             }
         }
 
