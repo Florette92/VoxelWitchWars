@@ -112,7 +112,11 @@ export class Player {
     }
 
     get position() {
-        return this.physicsPosition;
+        return this.mesh.position;
+    }
+
+    get rotation() {
+        return this.mesh.rotation;
     }
 
     setCharacterClass(className) {

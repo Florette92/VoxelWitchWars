@@ -657,3 +657,106 @@ if (btnCampaignSingle) {
         }
     });
 }
+
+// --- Game Loop ---
+let lastTime = performance.now();
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    const time = performance.now();
+    const delta = (time - lastTime) / 1000;
+    lastTime = time;
+
+    if (document.pointerLockElement === document.body) {
+        // Game Active
+        player.update(delta, remotePlayers);
+        
+        // Update Remote Players
+        remotePlayers.forEach(rp => rp.update(delta));
+        
+        // Update Particles
+        particleSystem.update(delta);
+        
+        // Update World (Chunks)
+        world.update(player.mesh.position);
+        
+        // Update Minimap
+        if (minimap) minimap.update();
+    }
+
+    renderer.render(scene, camera);
+}
+
+animate();
+
+// Resize Handler
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Chat Logic
+const chatInput = document.getElementById('chat-input');
+const chatContainer = document.getElementById('chat-container');
+
+if (chatInput) {
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const msg = chatInput.value.trim();
+            if (msg) {
+                networkManager.sendChat(msg);
+                chatInput.value = '';
+                chatInput.blur();
+                // Refocus game
+                document.body.requestPointerLock();
+            }
+        }
+    });
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        if (document.activeElement !== chatInput) {
+            if (chatContainer && !chatContainer.classList.contains('hidden')) {
+                chatInput.focus();
+                document.exitPointerLock();
+                e.preventDefault();
+            }
+        }
+    }
+});
+
+function addChatMessage(name, message, isSystem = false) {
+    const chatMessages = document.getElementById('chat-messages');
+    if (chatMessages) {
+        const div = document.createElement('div');
+        div.className = 'chat-message';
+        if (isSystem) div.classList.add('system');
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'name';
+        nameSpan.textContent = name + ': ';
+        
+        const msgSpan = document.createElement('span');
+        msgSpan.textContent = message;
+        
+        div.appendChild(nameSpan);
+        div.appendChild(msgSpan);
+        
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+}
+
+networkManager.onChatMessage = (data) => {
+    addChatMessage(data.name, data.message);
+};
+
+// Minimap
+const minimapCanvas = document.getElementById('minimap');
+let minimap = null;
+if (minimapCanvas) {
+    minimap = new MiniMap(world, player);
+}
