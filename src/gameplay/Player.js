@@ -490,8 +490,31 @@ export class Player {
             this.mana -= this.abilityCost;
             this.updateManaUI();
         } else if (this.team === 'blue') {
-            // Ice Wall (No damage mult needed usually, but kept for consistency if needed)
-            // ...existing code...
+            // Ice Wall
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+            const target = this.camera.position.clone().add(forward.multiplyScalar(5));
+            
+            const bx = Math.floor(target.x);
+            const by = Math.floor(target.y);
+            const bz = Math.floor(target.z);
+
+            // Create a 3x3 wall
+            for(let x = -1; x <= 1; x++) {
+                for(let y = 0; y < 3; y++) {
+                    // Rotate offset based on player rotation? For simplicity, just a wall perpendicular to world axes for now, 
+                    // or just a block in front. Let's do a simple block for now to test.
+                    // Better: Wall perpendicular to look direction.
+                    
+                    // Simplified: Just place 3 blocks high at target
+                    this.world.setBlock(bx, by + y, bz, 2); // 2 = Ice
+                    if (this.networkManager) {
+                        this.networkManager.sendBlockUpdate(bx, by + y, bz, 2);
+                    }
+                }
+            }
+            
+            this.mana -= this.abilityCost;
+            this.updateManaUI();
         }
     }
 

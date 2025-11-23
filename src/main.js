@@ -853,6 +853,8 @@ function animate() {
         // Check Crystal Collection
         crystalMeshes.forEach((mesh, id) => {
             if (player.position.distanceTo(mesh.position) < 2) {
+                // Only collect if it's visible (in world)
+                // Note: crystalMeshes only contains crystals that are 'home' or 'dropped'
                 networkManager.collectCrystal(id);
             }
         });
