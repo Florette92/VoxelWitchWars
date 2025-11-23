@@ -733,9 +733,30 @@ export class VoxelWorld {
                         // Check distance from tower again for the grid center
                         const ctDx = cx - c.x;
                         const ctDz = cz - c.z;
-                        if (Math.sqrt(ctDx*ctDx + ctDz*ctDz) >= 15) {
-                            return 10 + Math.floor(treeHash * 5); // Height
-                        }
+                        const distFromCenter = Math.sqrt(ctDx*ctDx + ctDz*ctDz);
+
+                        // --- EXCLUSION ZONES (Must match getIceTreeBlock) ---
+                        // 1. Clear Tower Area
+                        if (distFromCenter < 15) return 0;
+                        
+                        // 2. Clear Edge
+                        if (distFromCenter > 42) return 0;
+
+                        // 3. Clear Ice Path
+                        if (Math.abs(ctDx) < 6 && ctDz < -2 && ctDz > -50) return 0;
+
+                        // 4. Check Pond
+                        const pDx = cx - (c.x - 30);
+                        const pDz = cz - c.z;
+                        if (Math.sqrt(pDx*pDx + pDz*pDz) < 15) return 0;
+
+                        // 5. Check River
+                        const rDx = cx - c.x;
+                        const rDz = cz - c.z;
+                        if (rDx < -25 && Math.abs(rDz) < 6) return 0;
+                        // ----------------------------------------------------
+
+                        return 10 + Math.floor(treeHash * 5); // Height
                     }
                 }
                 return 0;
@@ -837,7 +858,13 @@ export class VoxelWorld {
                 
                 if (tDist <= currentRadius && tDist > currentRadius - 1.5) {
                     // Door Check
-                    if (localY < 5 && tDz > 0 && Math.abs(tDx) < 1.5) {
+                    // Determine door direction based on biome
+                    const doorDir = (c.type === 'ice') ? -1 : 1;
+                    
+                    // Door is on Z axis. 
+                    // If doorDir is 1, door is at +Z (tDz > 0).
+                    // If doorDir is -1, door is at -Z (tDz < 0).
+                    if (localY < 5 && (tDz * doorDir) > 0 && Math.abs(tDx) < 1.5) {
                         if (localY > 3) return true; // Arch
                         return false; // Open door
                     }

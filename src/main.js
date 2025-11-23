@@ -6,6 +6,7 @@ import { ParticleSystem } from './core/ParticleSystem.js';
 import { SoundManager } from './core/SoundManager.js';
 import { NetworkManager } from './core/NetworkManager.js';
 import { RemotePlayer } from './gameplay/RemotePlayer.js';
+import { LavaEffectManager } from './core/LavaEffectManager.js';
 
 // --- UI SETUP (Run immediately) ---
 console.log("Voxel Witch Wars v1.1 Loaded");
@@ -534,6 +535,9 @@ scene.add(world.mesh);
 const spawnPos = world.findSpawnPoint();
 const player = new Player(scene, camera, world, spawnPos, particleSystem, soundManager, networkManager);
 
+// Lava Effects
+const lavaEffectManager = new LavaEffectManager(scene, world, particleSystem, player);
+
 // Lobby Logic
 // lobbyMenu is defined at the top
 const lobbyStatus = document.getElementById('lobby-status');
@@ -745,6 +749,9 @@ function animate() {
         // Update Particles
         particleSystem.update(delta);
         
+        // Update Lava Effects
+        lavaEffectManager.update(delta);
+
         // Update World (Chunks)
         world.update(player.mesh.position);
         
