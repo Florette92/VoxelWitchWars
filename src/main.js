@@ -559,18 +559,25 @@ document.body.appendChild(scoreUI);
 // Start Screen Logic
 const startScreen = document.getElementById('start-screen');
 const startBtn = document.getElementById('start-btn');
+const lobbyMenuEl = document.getElementById('lobby-menu');
 
-console.log('Start Screen Element:', startScreen); // Debug log
+console.log('Start Screen Element:', startScreen); 
+console.log('Lobby Menu Element:', lobbyMenuEl);
 
 if (startBtn && startScreen) {
     startBtn.addEventListener('click', () => {
-        console.log('Start button clicked'); // Debug log
+        console.log('Start button clicked');
         startScreen.style.display = 'none';
-        document.getElementById('lobby-menu').style.display = 'flex';
+        if (lobbyMenuEl) {
+            lobbyMenuEl.style.display = 'flex';
+            lobbyMenuEl.classList.remove('hidden'); // Ensure hidden class is removed
+        } else {
+            console.error("Lobby menu not found!");
+        }
     });
     // Show start screen on load
     startScreen.style.display = 'flex';
-    document.getElementById('lobby-menu').style.display = 'none';
+    if (lobbyMenuEl) lobbyMenuEl.style.display = 'none';
 }
 
 // Remove old listener if it exists (it was replaced above, but just to be safe regarding the old button code)
