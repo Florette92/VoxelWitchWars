@@ -594,3 +594,29 @@ button.start-game {
 }
 
 /* Start Screen Art */
+
+/* Class Selection Buttons */
+.class-btn {
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: 2px solid transparent;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.8rem;
+    opacity: 0.6;
+    transition: all 0.2s;
+}
+
+.class-btn:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+.class-btn.selected {
+    border: 2px solid #fff;
+    opacity: 1.0;
+    background: var(--primary-color);
+    box-shadow: 0 0 10px var(--primary-glow);
+}
+
