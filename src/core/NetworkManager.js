@@ -282,7 +282,7 @@ export class NetworkManager {
             case 'playerDamaged':
                 // Trigger visual effect for everyone
                 if (this.onPlayerHitCallback) {
-                    this.onPlayerHitCallback(payload.id);
+                    this.onPlayerHitCallback(payload.id, payload.shooterId);
                 }
 
                 // Update health UI if it's me

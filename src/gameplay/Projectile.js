@@ -43,6 +43,15 @@ export class Projectile {
             return;
         }
 
+        // Tracer / Trail
+        this.particleSystem.emit(
+            this.mesh.position, 
+            this.type === 'fireball' ? 0xff4400 : 0x00ffff, 
+            1, // count
+            0.5, // speed
+            0.2 // life
+        );
+
         const move = this.velocity.clone().multiplyScalar(delta);
         const distance = move.length();
         const direction = move.clone().normalize();

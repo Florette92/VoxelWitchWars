@@ -146,6 +146,7 @@ export class Player {
         
         // Environmental
         this.lavaDamageTimer = 0;
+        this.footstepTimer = 0;
     }
 
     get position() {
@@ -275,6 +276,17 @@ export class Player {
         const alpha = 1 - Math.exp(-responsiveness * delta);
         this.velocity.x += (targetVx - this.velocity.x) * alpha;
         this.velocity.z += (targetVz - this.velocity.z) * alpha;
+
+        // Footsteps
+        if (this.onGround && !this.isFlying && (Math.abs(this.velocity.x) > 0.1 || Math.abs(this.velocity.z) > 0.1)) {
+            this.footstepTimer += delta;
+            if (this.footstepTimer > 0.4) { // Every 0.4s
+                this.soundManager.playFootstep();
+                this.footstepTimer = 0;
+            }
+        } else {
+            this.footstepTimer = 0.4; // Ready to play immediately on land/move
+        }
 
         // Lava Damage
         if (terrain === 'lava' && !this.isFlying) {

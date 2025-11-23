@@ -90,7 +90,7 @@ networkManager.onHealthUpdate = (health) => {
     }
 };
 
-networkManager.onPlayerHitCallback = (id) => {
+networkManager.onPlayerHitCallback = (id, shooterId) => {
     // Determine position of the hit player
     let position = null;
 
@@ -110,6 +110,18 @@ networkManager.onPlayerHitCallback = (id) => {
         // Emit red particles (blood/magic impact)
         particleSystem.emit(position, 0xff0000, 15, 8, 0.5);
         soundManager.playExplosion(); // Or a specific hit sound if we had one
+    }
+
+    // Hit Marker Logic
+    if (shooterId === networkManager.playerId) {
+        const hm = document.getElementById('hit-marker');
+        if (hm) {
+            hm.classList.remove('hidden');
+            soundManager.playHitMarker();
+            setTimeout(() => {
+                if (hm) hm.classList.add('hidden');
+            }, 100);
+        }
     }
 };
 

@@ -160,7 +160,11 @@ export class GameHost {
             if (target.health < 0) target.health = 0;
             
             // Notify everyone (or just target)
-            this.networkManager.broadcast('playerDamaged', { id: targetId, health: target.health });
+            this.networkManager.broadcast('playerDamaged', { 
+                id: targetId, 
+                health: target.health,
+                shooterId: shooterId 
+            });
             
             if (target.health <= 0) {
                 this.handlePlayerDeath(targetId, shooterId);
