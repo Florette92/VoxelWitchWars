@@ -455,8 +455,6 @@ export class VoxelWorld {
         if (treeH > 0) {
             // Tree trunk is at groundY (30) up to 30 + treeH
             // Leaves are wider? For now let's just collide with the trunk/center column
-            // If we want to collide with leaves we need to check neighbors too.
-            // But simple trunk collision is a good start.
             // If we are "inside" the tree column
             return 30 + treeH;
         }
@@ -870,5 +868,39 @@ export class VoxelWorld {
 
         // 2. Small Mushrooms - Removed
         return { exists: false };
+    }
+
+    getTerrainType(x, y, z) {
+        const ix = Math.floor(x);
+        const iy = Math.floor(y);
+        const iz = Math.floor(z);
+        
+        const islandData = this.getIslandData(ix, iz);
+        if (!islandData.isIsland) return 'void';
+        
+        const c = islandData.center;
+        const biome = c.type;
+        
+        // Check Pond
+        const pDx = ix - (c.x - 30);
+        const pDz = iz - c.z;
+        const pDist = Math.sqrt(pDx*pDx + pDz*pDz);
+        if (pDist < 12) {
+             // Pond water is roughly y=26 to y=30
+             if (iy >= 26 && iy <= 30) return biome === 'volcanic' ? 'lava' : 'water';
+        }
+        
+        // Check River
+        const rDx = ix - c.x;
+        const rDz = iz - c.z;
+        const isRiver = (rDx < -30 && Math.abs(rDz) < 3);
+        if (isRiver) {
+            // River water is roughly y=28 to y=30
+            if (iy >= 28 && iy <= 30) return biome === 'volcanic' ? 'lava' : 'water';
+        }
+        
+        if (biome === 'ice') return 'ice';
+        
+        return 'ground';
     }
 }

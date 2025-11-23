@@ -143,6 +143,9 @@ export class Player {
         this.speedBuffTimer = 0;
         this.damageBuffTimer = 0;
         this.shield = 0;
+        
+        // Environmental
+        this.lavaDamageTimer = 0;
     }
 
     get position() {
@@ -257,8 +260,37 @@ export class Player {
         let currentSpeed = this.isFlying ? this.flySpeed : this.speed;
         if (this.speedBuffTimer > 0) currentSpeed *= 2; // Speed Potion
 
-        this.velocity.x = direction.x * currentSpeed;
-        this.velocity.z = direction.z * currentSpeed;
+        const targetVx = direction.x * currentSpeed;
+        const targetVz = direction.z * currentSpeed;
+
+        // Check Terrain
+        const terrain = this.world.getTerrainType(this.physicsPosition.x, this.physicsPosition.y - 0.5, this.physicsPosition.z);
+        
+        // Friction / Inertia
+        let responsiveness = 20.0; // Default snappy
+        if (terrain === 'ice' && !this.isFlying && this.onGround) {
+            responsiveness = 1.0; // Slippery
+        }
+
+        const alpha = 1 - Math.exp(-responsiveness * delta);
+        this.velocity.x += (targetVx - this.velocity.x) * alpha;
+        this.velocity.z += (targetVz - this.velocity.z) * alpha;
+
+        // Lava Damage
+        if (terrain === 'lava' && !this.isFlying) {
+            this.lavaDamageTimer += delta;
+            if (this.lavaDamageTimer > 0.5) {
+                this.lavaDamageTimer = 0;
+                // Self-inflict damage via network
+                if (this.networkManager && this.networkManager.playerId) {
+                    this.networkManager.sendHit(this.networkManager.playerId, 5);
+                    // Visual feedback
+                    this.particleSystem.emit(this.position, 0xff4400, 10);
+                }
+            }
+        } else {
+            this.lavaDamageTimer = 0;
+        }
 
         if (this.isFlying) {
             // Flight Vertical Movement
