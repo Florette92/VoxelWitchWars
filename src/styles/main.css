@@ -639,8 +639,8 @@ button.start-game {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 70%;
-    max-width: 800px;
+    width: 50%;
+    max-width: 500px;
     z-index: 0;
     opacity: 0.9;
     animation: float-island 8s ease-in-out infinite;
