@@ -500,9 +500,129 @@ export class Player {
             // Update Health UI to show shield? 
             // For now, maybe just a visual effect or console log.
             // Or we can hack the health bar to show > 100?
-            this.networkManager.onHealthUpdate(this.health + this.shield); // Hacky update
+            if (this.networkManager) {
+                this.networkManager.onHealthUpdate(this.health + this.shield); // Hacky update
+            }
         } else if (type === 'berserk') {
             this.damageBuffTimer = 10.0;
+        }
+    }
+
+    createWand() {
+        const wandGroup = new THREE.Group();
+        
+        // Shaft
+        const shaftGeo = new THREE.CylinderGeometry(0.02, 0.03, 0.8, 8);
+        const shaftMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 }); // Dark wood
+        const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+        shaft.rotation.x = Math.PI / 2;
+        wandGroup.add(shaft);
+
+        // Gem
+        const gemGeo = new THREE.DodecahedronGeometry(0.06);
+        const gemMat = new THREE.MeshStandardMaterial({ 
+            color: 0x00ffff, 
+            emissive: 0x0088ff,
+            emissiveIntensity: 0.5,
+            transparent: true,
+            opacity: 0.9
+        });
+        const gem = new THREE.Mesh(gemGeo, gemMat);
+        gem.position.z = 0.4; // Tip of wand
+        wandGroup.add(gem);
+        
+        // Store reference for particles
+        this.wandParticles = gem;
+
+        return wandGroup;
+    }
+
+    createBroom() {
+        const broomGroup = new THREE.Group();
+        
+        // Handle
+        const handleGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.5, 8);
+        const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+        const handle = new THREE.Mesh(handleGeo, woodMat);
+        handle.rotation.x = Math.PI / 2;
+        broomGroup.add(handle);
+
+        // Bristles
+        const bristleGeo = new THREE.ConeGeometry(0.2, 0.6, 16);
+        const bristleMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c }); // Tan
+        const bristles = new THREE.Mesh(bristleGeo, bristleMat);
+        bristles.rotation.x = -Math.PI / 2;
+        bristles.position.z = -1.2;
+        broomGroup.add(bristles);
+
+        // Position relative to player
+        broomGroup.position.set(0, 0.8, 0);
+        
+        return broomGroup;
+    }
+
+    checkCollision(position) {
+        // Simple point collision for now
+        // Check feet
+        if (this.world.getBlock(Math.floor(position.x), Math.floor(position.y), Math.floor(position.z))) {
+            return true;
+        }
+        // Check head
+        if (this.world.getBlock(Math.floor(position.x), Math.floor(position.y + 1.5), Math.floor(position.z))) {
+            return true;
+        }
+        return false;
+    }
+
+    onDeath() {
+        this.isDead = true;
+        if (this.soundManager && this.soundManager.playDeath) {
+            this.soundManager.playDeath();
+        }
+        
+        // Respawn logic
+        setTimeout(() => {
+            this.isDead = false;
+            this.mesh.position.copy(this.spawnPoint);
+            this.physicsPosition.copy(this.spawnPoint);
+            this.velocity.set(0, 0, 0);
+            this.health = 100;
+            this.mana = 100;
+            this.updateManaUI();
+            if (this.networkManager) {
+                this.networkManager.sendRespawn(this.spawnPoint);
+            }
+        }, 3000);
+    }
+
+    updateBuildMode(delta) {
+        // Raycast from camera to find block
+        // For now, let's assume we can just place a block in front of the player
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
+        const target = this.camera.position.clone().add(forward.multiplyScalar(3));
+        
+        const bx = Math.floor(target.x);
+        const by = Math.floor(target.y);
+        const bz = Math.floor(target.z);
+        
+        this.ghostBlock.position.set(bx + 0.5, by + 0.5, bz + 0.5);
+        
+        if (this.input.isMouseButtonDown(0)) {
+            if (performance.now() - this.lastBuildTime > this.buildCooldown * 1000) {
+                this.world.setBlock(bx, by, bz, 1); // 1 = Stone/Dirt
+                this.lastBuildTime = performance.now();
+                if (this.networkManager) {
+                    this.networkManager.sendBlockUpdate(bx, by, bz, 1);
+                }
+            }
+        } else if (this.input.isMouseButtonDown(2)) {
+             if (performance.now() - this.lastBuildTime > this.buildCooldown * 1000) {
+                this.world.setBlock(bx, by, bz, 0); // 0 = Air
+                this.lastBuildTime = performance.now();
+                if (this.networkManager) {
+                    this.networkManager.sendBlockUpdate(bx, by, bz, 0);
+                }
+            }
         }
     }
 }
