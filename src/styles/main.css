@@ -639,12 +639,22 @@ button.start-game {
     top: 65%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 50%;
-    max-width: 500px;
+    width: 35%;
+    max-width: 350px;
     z-index: 0;
     opacity: 0.9;
     animation: float-island 8s ease-in-out infinite;
     pointer-events: none;
+}
+
+.version-tag {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1rem;
+    color: #aaa;
+    z-index: 10;
 }
 
 @keyframes float-island {
