@@ -49,7 +49,9 @@ export class GameHost {
             rx: 0, ry: 0,
             team: 'spectator',
             biome: 'forest',
-            health: 100
+            health: 100,
+            kills: 0,
+            deaths: 0
         };
 
         // Send initial state to the new player
@@ -71,7 +73,13 @@ export class GameHost {
     }
 
     broadcastPlayerList() {
-        const playerList = Object.values(this.players).map(p => ({ id: p.id, name: p.name }));
+        const playerList = Object.values(this.players).map(p => ({ 
+            id: p.id, 
+            name: p.name,
+            kills: p.kills,
+            deaths: p.deaths,
+            ping: 0 // Placeholder for now
+        }));
         this.networkManager.broadcast('playerListUpdate', playerList);
     }
 
@@ -121,14 +129,30 @@ export class GameHost {
             this.networkManager.broadcast('playerDamaged', { id: targetId, health: target.health });
             
             if (target.health <= 0) {
-                this.handlePlayerDeath(targetId);
+                this.handlePlayerDeath(targetId, shooterId);
             }
         }
     }
 
-    handlePlayerDeath(id) {
+    handlePlayerDeath(id, killerId) {
         const player = this.players[id];
         if (player) {
+            // Update stats
+            player.deaths++;
+            if (killerId && this.players[killerId] && killerId !== id) {
+                this.players[killerId].kills++;
+            }
+
+            // Broadcast Kill Feed
+            const killerName = (killerId && this.players[killerId]) ? this.players[killerId].name : "Environment";
+            this.networkManager.broadcast('killFeed', {
+                killer: killerName,
+                victim: player.name,
+                method: 'blasted'
+            });
+
+            this.broadcastPlayerList(); // Update scoreboard
+
             // Check if carrying crystal
             const carriedCrystal = this.crystals.find(c => c.carrierId === id);
             if (carriedCrystal) {

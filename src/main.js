@@ -746,3 +746,54 @@ function animate() {
 }
 
 animate();
+
+networkManager.onKillFeedCallback = (data) => {
+    const feed = document.getElementById('kill-feed');
+    if (feed) {
+        const msg = document.createElement('div');
+        msg.className = 'kill-msg';
+        msg.innerHTML = `<span style="color: #ff4444">${data.killer}</span> ${data.method} <span style="color: #00ffff">${data.victim}</span>`;
+        feed.appendChild(msg);
+        
+        // Remove after animation
+        setTimeout(() => {
+            if (msg.parentNode) msg.parentNode.removeChild(msg);
+        }, 5000);
+    }
+};
+
+networkManager.onPlayerListUpdate = (players) => {
+    const tbody = document.getElementById('scoreboard-body');
+    if (tbody) {
+        tbody.innerHTML = '';
+        // Sort by kills
+        players.sort((a, b) => (b.kills || 0) - (a.kills || 0));
+        
+        players.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${p.name}</td>
+                <td>${p.kills || 0}</td>
+                <td>${p.deaths || 0}</td>
+                <td>${p.ping || 0}ms</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+};
+
+// Scoreboard Toggle
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Tab') {
+        e.preventDefault(); // Prevent focus change
+        const sb = document.getElementById('scoreboard');
+        if (sb) sb.classList.remove('hidden');
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    if (e.code === 'Tab') {
+        const sb = document.getElementById('scoreboard');
+        if (sb) sb.classList.add('hidden');
+    }
+});

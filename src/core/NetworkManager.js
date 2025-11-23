@@ -30,6 +30,7 @@ export class NetworkManager {
         this.onHealthUpdate = null;
         this.onPlayerHitCallback = null; // New callback for visual effects
         this.onPlayerDied = null;
+        this.onKillFeedCallback = null;
         this.onChatMessage = null; // Callback for chat messages
     }
 
@@ -295,6 +296,9 @@ export class NetworkManager {
                 break;
             case 'chat':
                 if (this.onChatMessage) this.onChatMessage(payload);
+                break;
+            case 'killFeed':
+                if (this.onKillFeedCallback) this.onKillFeedCallback(payload);
                 break;
         }
     }

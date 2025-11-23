@@ -68,9 +68,25 @@
     </div>
 
     <!-- Game UI -->
-    <div id="crosshair"></div>
-    
-    <div id="ui" style="display: none;">
+    <div id="ui">
+      <div id="kill-feed"></div>
+      <div id="scoreboard" class="hidden">
+        <table>
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Kills</th>
+              <th>Deaths</th>
+              <th>Ping</th>
+            </tr>
+          </thead>
+          <tbody id="scoreboard-body">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+      <div id="crosshair"></div>
+      
       <div id="health-bar-container">
         <div id="health-bar"></div>
         <span id="health-text">100 / 100</span>
