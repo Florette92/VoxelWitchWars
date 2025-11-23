@@ -473,18 +473,40 @@ const hide = (el) => el && el.classList.add('hidden');
 
 // Network Callbacks for Lobby
 networkManager.onPlayerListUpdate = (players) => {
-    playerList.innerHTML = '';
-    players.forEach(p => {
-        const li = document.createElement('li');
-        const isMe = p.id === networkManager.playerId;
+    // Update Lobby List
+    if (playerList) {
+        playerList.innerHTML = '';
+        players.forEach(p => {
+            const li = document.createElement('li');
+            const isMe = p.id === networkManager.playerId;
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'name';
+            nameSpan.textContent = `${p.name} ${isMe ? " (You)" : ""}`;
+            
+            li.appendChild(nameSpan);
+            playerList.appendChild(li);
+        });
+    }
+
+    // Update Scoreboard
+    const tbody = document.getElementById('scoreboard-body');
+    if (tbody) {
+        tbody.innerHTML = '';
+        // Sort by kills
+        const sortedPlayers = [...players].sort((a, b) => (b.kills || 0) - (a.kills || 0));
         
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'name';
-        nameSpan.textContent = `${p.name} ${isMe ? " (You)" : ""}`;
-        
-        li.appendChild(nameSpan);
-        playerList.appendChild(li);
-    });
+        sortedPlayers.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${p.name}</td>
+                <td>${p.kills || 0}</td>
+                <td>${p.deaths || 0}</td>
+                <td>${p.ping || 0}ms</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
 };
 
 networkManager.onGameStarted = () => {
@@ -863,26 +885,6 @@ networkManager.onKillFeedCallback = (data) => {
         setTimeout(() => {
             if (msg.parentNode) msg.parentNode.removeChild(msg);
         }, 5000);
-    }
-};
-
-networkManager.onPlayerListUpdate = (players) => {
-    const tbody = document.getElementById('scoreboard-body');
-    if (tbody) {
-        tbody.innerHTML = '';
-        // Sort by kills
-        players.sort((a, b) => (b.kills || 0) - (a.kills || 0));
-        
-        players.forEach(p => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${p.name}</td>
-                <td>${p.kills || 0}</td>
-                <td>${p.deaths || 0}</td>
-                <td>${p.ping || 0}ms</td>
-            `;
-            tbody.appendChild(tr);
-        });
     }
 };
 
