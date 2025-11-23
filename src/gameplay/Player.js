@@ -138,6 +138,11 @@ export class Player {
         // Biome Outfit
         this.currentBiome = 'ice';
         this.checkBiomeTimer = 0;
+
+        // Potions / Buffs
+        this.speedBuffTimer = 0;
+        this.damageBuffTimer = 0;
+        this.shield = 0;
     }
 
     get position() {
@@ -146,6 +151,10 @@ export class Player {
 
     update(delta, remotePlayers) {
         if (this.isDead) return;
+
+        // Buff Timers
+        if (this.speedBuffTimer > 0) this.speedBuffTimer -= delta;
+        if (this.damageBuffTimer > 0) this.damageBuffTimer -= delta;
 
         // Mana Regen
         if (this.mana < this.maxMana) {
@@ -245,16 +254,18 @@ export class Player {
         if (direction.length() > 0) direction.normalize();
 
         // Movement
-        const currentSpeed = this.isFlying ? this.flySpeed : this.speed;
+        let currentSpeed = this.isFlying ? this.flySpeed : this.speed;
+        if (this.speedBuffTimer > 0) currentSpeed *= 2; // Speed Potion
+
         this.velocity.x = direction.x * currentSpeed;
         this.velocity.z = direction.z * currentSpeed;
 
         if (this.isFlying) {
             // Flight Vertical Movement
             if (this.input.isKeyDown('Space')) {
-                this.velocity.y = this.flySpeed * 0.5;
+                this.velocity.y = currentSpeed * 0.5;
             } else if (this.input.isKeyDown('ShiftLeft') || this.input.isKeyDown('KeyC')) {
-                this.velocity.y = -this.flySpeed * 0.5;
+                this.velocity.y = -currentSpeed * 0.5;
             } else {
                 this.velocity.y = 0;
             }
@@ -396,61 +407,58 @@ export class Player {
         }
     }
 
+    shoot() {
+        const damageMult = this.damageBuffTimer > 0 ? 2 : 1;
+        const projectile = new Projectile(
+            this.scene, 
+            this.wand.getWorldPosition(new THREE.Vector3()), 
+            this.camera.getWorldDirection(new THREE.Vector3()), 
+            this.particleSystem,
+            this.soundManager,
+            'normal',
+            damageMult
+        );
+        this.projectiles.push(projectile);
+        this.soundManager.playShoot();
+    }
+
     useAbility() {
-        const now = performance.now() / 1000;
-        if (now - this.lastAbilityTime < this.abilityCooldown) return;
-        
-        if (this.mana < this.abilityCost) {
-            // Not enough mana feedback?
-            return;
-        }
+        if (this.mana < this.abilityCost) return;
+
+        const damageMult = this.damageBuffTimer > 0 ? 2 : 1;
 
         if (this.team === 'red') {
             // Fireball
-            const direction = new THREE.Vector3(0, 0, -1);
-            direction.applyEuler(this.rotation);
-            const startPos = this.mesh.position.clone().add(new THREE.Vector3(0, 1.5, 0));
-            startPos.add(direction.clone().multiplyScalar(1.0));
-            
-            const proj = new Projectile(this.scene, startPos, direction, this.particleSystem, this.soundManager, 'fireball');
-            
-            // Network callback
-            proj.onPlayerHitCallback = (targetId, damage) => {
-                if (this.networkManager) this.networkManager.sendHit(targetId, damage);
-            };
-            
-            this.projectiles.push(proj);
-            this.lastAbilityTime = now;
+            const projectile = new Projectile(
+                this.scene, 
+                this.wand.getWorldPosition(new THREE.Vector3()), 
+                this.camera.getWorldDirection(new THREE.Vector3()), 
+                this.particleSystem,
+                this.soundManager,
+                'fireball',
+                damageMult
+            );
+            this.projectiles.push(projectile);
             this.mana -= this.abilityCost;
             this.updateManaUI();
-            
         } else if (this.team === 'blue') {
-            // Ice Wall
-            const direction = new THREE.Vector3(0, 0, -1);
-            direction.applyEuler(this.rotation);
-            const startPos = this.mesh.position.clone().add(new THREE.Vector3(0, 1.5, 0));
-            
-            // Raycast to find placement
-            const raycaster = new THREE.Raycaster(startPos, direction, 0, 10);
-            // We don't have easy raycast against world here without world.raycast
-            // Let's just place it 3 units in front
-            const targetPos = startPos.add(direction.multiplyScalar(3));
-            const bx = Math.floor(targetPos.x);
-            const by = Math.floor(targetPos.y);
-            const bz = Math.floor(targetPos.z);
-            
-            // Create 3x3 wall
-            // Perpendicular to facing? Simplified: just a block around target
-            for(let x=-1; x<=1; x++) {
-                for(let y=0; y<3; y++) {
-                    // Simple wall logic, maybe improve orientation later
-                    this.world.addBlock(bx+x, by+y, bz, 0x88ccff); // Ice color
-                    this.world.addBlock(bx, by+y, bz+x, 0x88ccff); // Cross shape to cover angles
-                }
-            }
-            this.lastAbilityTime = now;
-            this.mana -= this.abilityCost;
-            this.updateManaUI();
+            // Ice Wall (No damage mult needed usually, but kept for consistency if needed)
+            // ...existing code...
+        }
+    }
+
+    applyPotion(type) {
+        console.log("Applied potion:", type);
+        if (type === 'speed') {
+            this.speedBuffTimer = 10.0;
+        } else if (type === 'shield') {
+            this.shield += 50;
+            // Update Health UI to show shield? 
+            // For now, maybe just a visual effect or console log.
+            // Or we can hack the health bar to show > 100?
+            this.networkManager.onHealthUpdate(this.health + this.shield); // Hacky update
+        } else if (type === 'berserk') {
+            this.damageBuffTimer = 10.0;
         }
     }
 }

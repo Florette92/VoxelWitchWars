@@ -32,6 +32,9 @@ export class NetworkManager {
         this.onPlayerDied = null;
         this.onKillFeedCallback = null;
         this.onChatMessage = null; // Callback for chat messages
+        this.onPotionsInit = null;
+        this.onPotionUpdate = null;
+        this.onApplyPotion = null;
     }
 
     async hostGame(customId = null, playerName = "Host") {
@@ -249,6 +252,7 @@ export class NetworkManager {
                     }
                 });
                 if (this.onCrystalsInit) this.onCrystalsInit(payload.crystals);
+                if (this.onPotionsInit) this.onPotionsInit(payload.potions);
                 if (this.onScoreUpdate) this.onScoreUpdate(payload.scores);
                 break;
             case 'playerJoined':
@@ -300,6 +304,12 @@ export class NetworkManager {
             case 'killFeed':
                 if (this.onKillFeedCallback) this.onKillFeedCallback(payload);
                 break;
+            case 'potionUpdate':
+                if (this.onPotionUpdate) this.onPotionUpdate(payload);
+                break;
+            case 'applyPotion':
+                if (this.onApplyPotion) this.onApplyPotion(payload.type);
+                break;
         }
     }
 
@@ -317,6 +327,10 @@ export class NetworkManager {
 
     collectCrystal(id) {
         this.send("collectCrystal", id);
+    }
+
+    collectPotion(id) {
+        this.send("collectPotion", id);
     }
 
     sendHit(targetId, damage) {

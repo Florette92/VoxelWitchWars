@@ -22,12 +22,23 @@ export class GameHost {
         ];
         this.scores = { red: 0, blue: 0 };
         this.TEAMS = ['red', 'blue'];
+        
+        this.potions = [
+            { id: 'speed-1', type: 'speed', x: 0, y: 50, z: 0, active: true, respawnTime: 10000 },
+            { id: 'shield-1', type: 'shield', x: -60, y: 40, z: 60, active: true, respawnTime: 15000 },
+            { id: 'berserk-1', type: 'berserk', x: 60, y: 40, z: -60, active: true, respawnTime: 20000 }
+        ];
     }
 
     init() {
         // Reset state
         this.scores = { red: 0, blue: 0 };
         this.resetCrystals();
+        this.resetPotions();
+    }
+
+    resetPotions() {
+        this.potions.forEach(p => p.active = true);
     }
 
     resetCrystals() {
@@ -59,6 +70,7 @@ export class GameHost {
             id: id,
             players: this.players,
             crystals: this.crystals,
+            potions: this.potions,
             scores: this.scores
         });
 
@@ -114,6 +126,28 @@ export class GameHost {
             case 'requestRespawn':
                 this.handleRequestRespawn(id);
                 break;
+            case 'collectPotion':
+                this.handleCollectPotion(id, data);
+                break;
+        }
+    }
+
+    handleCollectPotion(playerId, potionId) {
+        const potion = this.potions.find(p => p.id === potionId);
+        if (potion && potion.active) {
+            potion.active = false;
+            
+            // Notify everyone
+            this.networkManager.broadcast('potionUpdate', { id: potionId, active: false });
+            
+            // Notify collector to apply effect
+            this.networkManager.sendTo(playerId, 'applyPotion', { type: potion.type });
+
+            // Respawn timer
+            setTimeout(() => {
+                potion.active = true;
+                this.networkManager.broadcast('potionUpdate', { id: potionId, active: true });
+            }, potion.respawnTime);
         }
     }
 

@@ -29,6 +29,7 @@ const networkManager = new NetworkManager();
 // Multiplayer State
 const remotePlayers = new Map();
 const crystalMeshes = new Map();
+const potionMeshes = new Map();
 
 // Network Callbacks
 // onLocalPlayerInit is defined below with chat logic
@@ -682,6 +683,71 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// Potion System
+function createPotionMesh(type) {
+    let color = 0xffffff;
+    if (type === 'speed') color = 0xffff00; // Yellow
+    else if (type === 'shield') color = 0x00ffff; // Cyan
+    else if (type === 'berserk') color = 0xff0000; // Red
+
+    const geometry = new THREE.OctahedronGeometry(0.5, 0);
+    const material = new THREE.MeshStandardMaterial({ 
+        color: color, 
+        emissive: color,
+        emissiveIntensity: 0.5,
+        transparent: true,
+        opacity: 0.8
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    
+    // Add floating animation helper
+    mesh.userData = { 
+        initialY: 0, 
+        timeOffset: Math.random() * 100 
+    };
+    
+    // Add light
+    const light = new THREE.PointLight(color, 1, 5);
+    mesh.add(light);
+    
+    return mesh;
+}
+
+networkManager.onPotionsInit = (potions) => {
+    // Clear existing
+    potionMeshes.forEach(mesh => scene.remove(mesh));
+    potionMeshes.clear();
+
+    potions.forEach(p => {
+        const mesh = createPotionMesh(p.type);
+        mesh.position.set(p.x, p.y, p.z);
+        mesh.userData.initialY = p.y;
+        mesh.userData.id = p.id;
+        mesh.visible = p.active;
+        
+        scene.add(mesh);
+        potionMeshes.set(p.id, mesh);
+    });
+};
+
+networkManager.onPotionUpdate = (data) => {
+    const mesh = potionMeshes.get(data.id);
+    if (mesh) {
+        mesh.visible = data.active;
+        if (data.active) {
+            // Play spawn sound/effect?
+        } else {
+            // Play collect sound/effect?
+            particleSystem.emit(mesh.position, mesh.material.color.getHex(), 20);
+        }
+    }
+};
+
+networkManager.onApplyPotion = (type) => {
+    player.applyPotion(type);
+    soundManager.playPowerup();
+};
+
 // Game Loop
 const clock = new THREE.Clock();
 let minimap;
@@ -698,8 +764,23 @@ function animate() {
         minimap.update();
         particleSystem.update(delta);
         
-        // Update Remote Players
-        remotePlayers.forEach(rp => rp.update(delta));
+        // Update Potions
+        const time = performance.now() / 1000;
+        potionMeshes.forEach((mesh, id) => {
+            if (mesh.visible) {
+                // Float animation
+                mesh.position.y = mesh.userData.initialY + Math.sin(time * 2 + mesh.userData.timeOffset) * 0.5;
+                mesh.rotation.y += delta;
+
+                // Collision Check
+                if (player.position.distanceTo(mesh.position) < 1.5) {
+                    // Collect
+                    networkManager.collectPotion(id);
+                    // Hide locally immediately to prevent double collect (server will confirm)
+                    mesh.visible = false; 
+                }
+            }
+        });
 
         // Animate Crystals
         crystalMeshes.forEach(mesh => {

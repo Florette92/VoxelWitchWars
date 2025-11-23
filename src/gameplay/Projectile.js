@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export class Projectile {
-    constructor(scene, position, direction, particleSystem, soundManager, type = 'normal') {
+    constructor(scene, position, direction, particleSystem, soundManager, type = 'normal', damageMultiplier = 1) {
         this.scene = scene;
         this.particleSystem = particleSystem;
         this.soundManager = soundManager;
@@ -9,7 +9,7 @@ export class Projectile {
         this.velocity = direction.clone().normalize().multiplyScalar(60); // Speed
         this.isAlive = true;
         this.lifeTime = 1.5; // Seconds
-        this.damage = 10;
+        this.damage = 10 * damageMultiplier;
 
         // Visuals
         let color = 0x00ffff;
@@ -18,7 +18,7 @@ export class Projectile {
         if (this.type === 'fireball') {
             color = 0xff4400;
             size = 0.6;
-            this.damage = 30;
+            this.damage = 30 * damageMultiplier;
             this.lifeTime = 3.0;
         }
 
