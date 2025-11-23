@@ -91,7 +91,8 @@ export class Player {
 
         // Camera
         this.cameraOffset = new THREE.Vector3(0, 2, 5);
-        this.rotation = new THREE.Euler(0, 0, 0, 'YXZ');
+        // this.rotation is now a getter/setter or handled differently
+        this.cameraRotation = new THREE.Euler(0, 0, 0, 'YXZ');
 
         // Biome Outfit
         this.currentBiome = 'ice';
@@ -116,7 +117,7 @@ export class Player {
     }
 
     get rotation() {
-        return this.mesh.rotation;
+        return this.cameraRotation;
     }
 
     setCharacterClass(className) {
@@ -173,7 +174,7 @@ export class Player {
         if (this.networkTimer >= this.networkInterval) {
             this.networkTimer = 0;
             if (this.networkManager) {
-                this.networkManager.sendMove(this.physicsPosition, this.rotation, this.currentBiome);
+                this.networkManager.sendMove(this.physicsPosition, this.cameraRotation, this.currentBiome);
             }
         }
 
@@ -234,9 +235,9 @@ export class Player {
 
         // Input Handling
         const mouseMove = this.input.getMouseMovement();
-        this.rotation.y -= mouseMove.x * 0.002;
-        this.rotation.x -= mouseMove.y * 0.002;
-        this.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rotation.x));
+        this.cameraRotation.y -= mouseMove.x * 0.002;
+        this.cameraRotation.x -= mouseMove.y * 0.002;
+        this.cameraRotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.cameraRotation.x));
 
         // Dash Ability (Shift)
         if (this.input.isKeyDown('ShiftLeft') && !this.isFlying) {
@@ -247,8 +248,8 @@ export class Player {
             }
         }
 
-        const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.rotation.y);
-        const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.rotation.y);
+        const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.cameraRotation.y);
+        const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.cameraRotation.y);
 
         const direction = new THREE.Vector3();
         if (this.input.isKeyDown('KeyW')) direction.add(forward);
@@ -383,20 +384,20 @@ export class Player {
         
         // Offset from neck to camera (Right 1.5, Up 1.0, Back 5)
         const offset = new THREE.Vector3(1.5, 1.0, 5);
-        offset.applyEuler(this.rotation);
+        offset.applyEuler(this.cameraRotation);
         
         const cameraPos = pivot.clone().add(offset);
         this.camera.position.copy(cameraPos);
 
         // Look direction matches rotation
         const viewDirection = new THREE.Vector3(0, 0, -1);
-        viewDirection.applyEuler(this.rotation);
+        viewDirection.applyEuler(this.cameraRotation);
         
         const lookTarget = cameraPos.clone().add(viewDirection.multiplyScalar(20));
         this.camera.lookAt(lookTarget);
         
         // Rotate player mesh
-        this.mesh.rotation.y = this.rotation.y;
+        this.mesh.rotation.y = this.cameraRotation.y;
 
         if (this.isFlying) {
             // Flight Tilt Controls (WASD affects mesh tilt)
