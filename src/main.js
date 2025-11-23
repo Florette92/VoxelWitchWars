@@ -605,9 +605,20 @@ function renderLobbyList() {
                 <div style="font-weight: bold; color: #fff;">${data.name || id}</div>
                 <div style="font-size: 0.8rem; color: #aaa;">ID: ${id}</div>
             </div>
-            <div style="font-size: 0.8rem; color: #00ffff;">${data.players || '?'} Players</div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="font-size: 0.8rem; color: #00ffff;">${data.players || '?'} Players</div>
+                <button class="join-lobby-btn" style="background: var(--primary-color); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">JOIN</button>
+            </div>
         `;
         
+        const joinBtn = div.querySelector('.join-lobby-btn');
+        joinBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent div click
+            if (inputHostId) inputHostId.value = id;
+            // Trigger join
+            if (btnJoin) btnJoin.click();
+        });
+
         div.addEventListener('click', () => {
             if (inputHostId) inputHostId.value = id;
             // Highlight selection

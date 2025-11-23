@@ -5,8 +5,15 @@ import { GameHost } from "./GameHost.js";
 export class NetworkManager {
     constructor() {
         this.peer = null;
-        this.gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-        this.lobbies = this.gun.get('voxelwitchwars').get('lobbies');
+        // Use multiple relays for better reliability
+        this.gun = Gun({
+            peers: [
+                'https://gun-manhattan.herokuapp.com/gun',
+                'https://gun-us.herokuapp.com/gun',
+                'https://gundb-relay-ml.herokuapp.com/gun' 
+            ]
+        });
+        this.lobbies = this.gun.get('voxelwitchwars_v2').get('lobbies');
         this.lobbyHeartbeat = null;
 
         this.conn = null; // Connection to Host (if client)
@@ -388,7 +395,8 @@ export class NetworkManager {
         };
         
         updateLobby();
-        this.lobbyHeartbeat = setInterval(updateLobby, 2000);
+        // Heartbeat every 3 seconds
+        this.lobbyHeartbeat = setInterval(updateLobby, 3000);
         
         // Cleanup on unload
         window.addEventListener('beforeunload', () => {
@@ -404,8 +412,8 @@ export class NetworkManager {
     subscribeToLobbies(callback) {
         console.log("Subscribing to lobbies...");
         this.lobbies.map().on((data, id) => {
-            // Filter out old lobbies (older than 5 seconds) or nulls
-            if (data && data.timestamp > Date.now() - 5000) {
+            // Filter out old lobbies (older than 30 seconds to handle clock skew)
+            if (data && data.timestamp > Date.now() - 30000) {
                 callback(id, data);
             } else {
                 callback(id, null); // Signal to remove
