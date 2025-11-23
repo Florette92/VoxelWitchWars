@@ -344,6 +344,14 @@ export class NetworkManager {
         this.send("hitPlayer", { targetId, damage });
     }
 
+    sendRespawn(spawnPoint) {
+        this.send("requestRespawn", {});
+    }
+
+    sendBlockUpdate(x, y, z, type) {
+        this.send("blockUpdate", { x, y, z, type });
+    }
+
     joinTeam(team) {
         console.log("NetworkManager: Joining team", team);
         this.send("joinTeam", team);
