@@ -514,6 +514,13 @@ networkManager.onGameStarted = () => {
     if (lobbyMenu) lobbyMenu.classList.add('hidden');
     const startScreen = document.getElementById('start-screen');
     if (startScreen) startScreen.style.display = 'none';
+    
+    // Show Team Selection
+    const startMenu = document.getElementById('start-menu');
+    if (startMenu) {
+        startMenu.classList.remove('hidden');
+        startMenu.style.display = 'flex';
+    }
 };
 
 if (btnHost) {
