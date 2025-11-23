@@ -490,15 +490,27 @@ button.start-game {
 
 .start-image img {
   max-width: 400px;
-  width: 80%;
+  width: 40%;
   height: auto;
   animation: float 3s ease-in-out infinite;
+  margin: 0 20px;
+}
+
+.start-image img.flipped-witch {
+  transform: scaleX(-1);
+  animation: float-flipped 3s ease-in-out infinite;
 }
 
 @keyframes float {
   0% { transform: translateY(0px); }
   50% { transform: translateY(-15px); }
   100% { transform: translateY(0px); }
+}
+
+@keyframes float-flipped {
+  0% { transform: translateY(0px) scaleX(-1); }
+  50% { transform: translateY(-15px) scaleX(-1); }
+  100% { transform: translateY(0px) scaleX(-1); }
 }
 
 /* Chat Box */
