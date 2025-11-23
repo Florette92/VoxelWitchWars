@@ -68,6 +68,7 @@ if (btnCampaignBack) {
 }
 
 if (btnCampaignSingle) {
+    /* Moved to later in file to access networkManager
     btnCampaignSingle.addEventListener('click', () => {
         if (campaignMenu) campaignMenu.classList.add('hidden');
         if (lobbyMenu) {
@@ -78,6 +79,7 @@ if (btnCampaignSingle) {
             // Here we could auto-trigger hosting or set a game mode flag
         }
     });
+    */
 }
 
 if (btnCampaignCoop) {
@@ -625,402 +627,33 @@ if (btnClassWitch && btnClassWarlock) {
     });
 }
 
-if (btnHost) {
-    btnHost.addEventListener('click', async () => {
-        const customId = inputCustomHostId.value.trim() || null;
-        const playerName = inputPlayerName.value.trim() || "Host";
+// Single Player Instant Start
+if (btnCampaignSingle) {
+    btnCampaignSingle.addEventListener('click', async () => {
+        if (campaignMenu) campaignMenu.classList.add('hidden');
         
-        lobbyStatus.textContent = "Initializing Host...";
+        // Show loading or something?
+        // For now just start
+        
+        const playerName = "Player"; 
+        
         try {
-            const id = await networkManager.hostGame(customId, playerName, selectedClass);
-            lobbyStatus.textContent = ""; // Clear status
+            // Host game
+            await networkManager.hostGame(null, playerName, selectedClass);
             
-            // Show Waiting Room
-            hide(mainMenuButtons);
-            show(waitingRoom);
-            show(startGameBtn);
-            hide(waitingMsg);
-            lobbyNameDisplay.textContent = id;
-            
-            // Show Chat
-            if (chatContainer) chatContainer.classList.remove('hidden');
-            addChatMessage("System", "Lobby created. Waiting for players...", true);
-
-            // Copy to clipboard
-            navigator.clipboard.writeText(id);
-            
+            // Start game immediately
+            if (networkManager.gameHost) {
+                networkManager.gameHost.startGame();
+                
+                // Auto-join Blue Team to skip selection
+                setTimeout(() => {
+                    networkManager.send('joinTeam', 'blue');
+                }, 100);
+            }
         } catch (err) {
-            lobbyStatus.textContent = "Error: " + err;
+            console.error("Failed to start single player:", err);
+            alert("Failed to start single player: " + err);
+            if (campaignMenu) campaignMenu.classList.remove('hidden');
         }
     });
 }
-
-if (startGameBtn) {
-    startGameBtn.addEventListener('click', () => {
-        if (networkManager.gameHost) {
-            networkManager.gameHost.startGame();
-        }
-    });
-}
-
-if (btnJoin) {
-    btnJoin.addEventListener('click', async () => {
-        const id = inputHostId.value.trim();
-        const playerName = inputPlayerName.value.trim() || "Player";
-
-        if (!id) {
-            lobbyStatus.textContent = "Please enter a Host ID";
-            return;
-        }
-        
-        lobbyStatus.textContent = "Connecting...";
-        try {
-            await networkManager.joinGame(id, playerName, selectedClass);
-            lobbyStatus.textContent = "";
-            
-            // Show Waiting Room
-            hide(mainMenuButtons);
-            show(waitingRoom);
-            hide(startGameBtn);
-            show(waitingMsg);
-            lobbyNameDisplay.textContent = id;
-            
-            // Show Chat
-            if (chatContainer) chatContainer.classList.remove('hidden');
-            addChatMessage("System", "Connected to lobby.", true);
-            
-        } catch (err) {
-            lobbyStatus.textContent = "Error: " + err;
-        }
-    });
-}
-
-// Start Menu Logic
-const ui = document.getElementById('ui');
-let gameStarted = false;
-
-// Add Score UI
-const scoreUI = document.createElement('div');
-scoreUI.id = 'score-ui';
-document.body.appendChild(scoreUI);
-
-// Remove old listener if it exists (it was replaced above, but just to be safe regarding the old button code)
-// The previous replace_string_in_file removed the onLocalPlayerInit block which contained the logic.
-// Now we need to remove the old button listener for 'btn-join' which is no longer in the HTML.
-
-// Lobby List Logic
-const lobbyListContainer = document.getElementById('lobby-list-container');
-const btnRefreshLobbies = document.getElementById('btn-refresh-lobbies');
-const activeLobbies = new Map();
-
-function renderLobbyList() {
-    if (!lobbyListContainer) return;
-    lobbyListContainer.innerHTML = '';
-    if (activeLobbies.size === 0) {
-        lobbyListContainer.innerHTML = '<div style="color: #aaa; font-size: 0.8rem; text-align: center; padding: 20px;">No active lobbies found.<br>Be the first to host!</div>';
-        return;
-    }
-    
-    activeLobbies.forEach((data, id) => {
-        const div = document.createElement('div');
-        div.style.padding = '10px';
-        div.style.borderBottom = '1px solid #444';
-        div.style.cursor = 'pointer';
-        div.style.display = 'flex';
-        div.style.justifyContent = 'space-between';
-        div.style.alignItems = 'center';
-        div.className = 'lobby-item';
-        
-        div.innerHTML = `
-            <div>
-                <div style="font-weight: bold; color: #fff;">${data.name || id}</div>
-                <div style="font-size: 0.8rem; color: #aaa;">ID: ${id}</div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="font-size: 0.8rem; color: #00ffff;">${data.players || '?'} Players</div>
-                <button class="join-lobby-btn" style="background: var(--primary-color); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">JOIN</button>
-            </div>
-        `;
-        
-        const joinBtn = div.querySelector('.join-lobby-btn');
-        joinBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent div click
-            if (inputHostId) inputHostId.value = id;
-            // Trigger join
-            if (btnJoin) btnJoin.click();
-        });
-
-        div.addEventListener('click', () => {
-            if (inputHostId) inputHostId.value = id;
-            // Highlight selection
-            Array.from(lobbyListContainer.children).forEach(c => c.style.background = 'transparent');
-            div.style.background = 'rgba(160, 32, 240, 0.3)';
-        });
-        
-        div.addEventListener('mouseenter', () => {
-            if (div.style.background !== 'rgba(160, 32, 240, 0.3)') div.style.background = 'rgba(255, 255, 255, 0.1)';
-        });
-        div.addEventListener('mouseleave', () => {
-            if (div.style.background !== 'rgba(160, 32, 240, 0.3)') div.style.background = 'transparent';
-        });
-        
-        lobbyListContainer.appendChild(div);
-    });
-}
-
-// Subscribe to lobbies
-networkManager.subscribeToLobbies((id, data) => {
-    if (data) {
-        activeLobbies.set(id, data);
-    } else {
-        activeLobbies.delete(id);
-    }
-    renderLobbyList();
-});
-
-if (btnRefreshLobbies) {
-    btnRefreshLobbies.addEventListener('click', () => {
-        activeLobbies.clear();
-        lobbyListContainer.innerHTML = '<div style="color: #aaa; font-size: 0.8rem; text-align: center; padding: 20px;">Refreshing...</div>';
-        // GunDB will push updates again automatically
-    });
-}
-
-// Chat Logic
-const chatContainer = document.getElementById('chat-container');
-const chatMessages = document.getElementById('chat-messages');
-const chatInput = document.getElementById('chat-input');
-
-function addChatMessage(name, message, isSystem = false) {
-    const div = document.createElement('div');
-    div.className = 'chat-msg';
-    
-    if (isSystem) {
-        div.innerHTML = `<span class="system">${message}</span>`;
-    } else {
-        // Sanitize input
-        const safeName = name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const safeMsg = message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        div.innerHTML = `<span class="name">${safeName}:</span><span class="msg">${safeMsg}</span>`;
-    }
-    
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-networkManager.onChatMessage = (data) => {
-    addChatMessage(data.name, data.message);
-};
-
-if (chatInput) {
-    chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            const msg = chatInput.value.trim();
-            if (msg) {
-                networkManager.sendChat(msg);
-                chatInput.value = '';
-            }
-        }
-        e.stopPropagation(); // Prevent game controls from triggering
-    });
-    
-    // Prevent WASD movement while typing
-    chatInput.addEventListener('focus', () => {
-        // Maybe disable game controls flag here if needed
-    });
-}
-
-// Global Key Listener for Chat
-document.addEventListener('keydown', (e) => {
-    if ((e.key === 't' || e.key === 'T') && document.activeElement !== chatInput && document.activeElement.tagName !== 'INPUT') {
-        if (chatInput && !chatContainer.classList.contains('hidden')) {
-            e.preventDefault(); // Prevent typing 't'
-            chatInput.focus();
-        }
-    }
-});
-
-// Handle Window Resize
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-// Potion System
-function createPotionMesh(type) {
-    let color = 0xffffff;
-    if (type === 'speed') color = 0xffff00; // Yellow
-    else if (type === 'shield') color = 0x00ffff; // Cyan
-    else if (type === 'berserk') color = 0xff0000; // Red
-
-    const geometry = new THREE.OctahedronGeometry(0.5, 0);
-    const material = new THREE.MeshStandardMaterial({ 
-        color: color, 
-        emissive: color,
-        emissiveIntensity: 0.5,
-        transparent: true,
-        opacity: 0.8
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    
-    // Add floating animation helper
-    mesh.userData = { 
-        initialY: 0, 
-        timeOffset: Math.random() * 100 
-    };
-    
-    // Add light
-    const light = new THREE.PointLight(color, 1, 5);
-    mesh.add(light);
-    
-    return mesh;
-}
-
-networkManager.onPotionsInit = (potions) => {
-    // Clear existing
-    potionMeshes.forEach(mesh => scene.remove(mesh));
-    potionMeshes.clear();
-
-    potions.forEach(p => {
-        const mesh = createPotionMesh(p.type);
-        mesh.position.set(p.x, p.y, p.z);
-        mesh.userData.initialY = p.y;
-        mesh.userData.id = p.id;
-        mesh.visible = p.active;
-        
-        scene.add(mesh);
-        potionMeshes.set(p.id, mesh);
-    });
-};
-
-networkManager.onPotionUpdate = (data) => {
-    const mesh = potionMeshes.get(data.id);
-    if (mesh) {
-        mesh.visible = data.active;
-        if (data.active) {
-            // Play spawn sound/effect?
-        } else {
-            // Play collect sound/effect?
-            particleSystem.emit(mesh.position, mesh.material.color.getHex(), 20);
-        }
-    }
-};
-
-networkManager.onApplyPotion = (type) => {
-    player.applyPotion(type);
-    soundManager.playPowerup();
-};
-
-// Game Loop
-const clock = new THREE.Clock();
-let minimap;
-
-function animate() {
-    requestAnimationFrame(animate);
-
-    const delta = clock.getDelta();
-    
-    if (gameStarted) {
-        if (!minimap) minimap = new MiniMap(world, player);
-        player.update(delta, remotePlayers);
-        world.update(player.position);
-        minimap.update();
-        particleSystem.update(delta);
-        
-        // Update Potions
-        const time = performance.now() / 1000;
-        potionMeshes.forEach((mesh, id) => {
-            if (mesh.visible) {
-                // Float animation
-                mesh.position.y = mesh.userData.initialY + Math.sin(time * 2 + mesh.userData.timeOffset) * 0.5;
-                mesh.rotation.y += delta;
-
-                // Collision Check
-                if (player.position.distanceTo(mesh.position) < 1.5) {
-                    // Collect
-                    networkManager.collectPotion(id);
-                    // Hide locally immediately to prevent double collect (server will confirm)
-                    mesh.visible = false; 
-                }
-            }
-        });
-
-        // Animate Crystals
-        crystalMeshes.forEach(mesh => {
-            mesh.rotation.y += delta;
-            mesh.position.y += Math.sin(clock.getElapsedTime() * 2) * 0.01;
-        });
-
-        // Check Crystal Collection
-        crystalMeshes.forEach((mesh, id) => {
-            if (player.position.distanceTo(mesh.position) < 2) {
-                // Only collect if it's visible (in world)
-                // Note: crystalMeshes only contains crystals that are 'home' or 'dropped'
-                networkManager.collectCrystal(id);
-            }
-        });
-
-        // Check Base Collision (Capture)
-        const myTeam = player.team;
-        if (myTeam) {
-            let basePos;
-            if (myTeam === 'blue') basePos = new THREE.Vector3(-150, 32, 150);
-            else if (myTeam === 'red') basePos = new THREE.Vector3(-150, 32, -150);
-            
-            if (basePos && player.position.distanceTo(basePos) < 5) {
-                // Check if carrying enemy flag
-                const carrying = localCrystals.some(c => c.carrierId === networkManager.playerId && c.team !== myTeam);
-                if (carrying) {
-                    networkManager.send('captureFlag', {});
-                }
-            }
-        }
-        
-        // Update wind sound based on speed/height
-        const speed = player.velocity.length();
-        soundManager.updateWind(speed);
-        
-        // Handle Abilities
-        if (player.input.isMouseButtonDown(2)) { // Right Click
-            player.useAbility();
-        }
-    } else {
-        // Optional: Rotate camera around the world or something for a nice intro
-    }
-
-    renderer.render(scene, camera);
-}
-
-animate();
-
-networkManager.onKillFeedCallback = (data) => {
-    const feed = document.getElementById('kill-feed');
-    if (feed) {
-        const msg = document.createElement('div');
-        msg.className = 'kill-msg';
-        msg.innerHTML = `<span style="color: #ff4444">${data.killer}</span> ${data.method} <span style="color: #00ffff">${data.victim}</span>`;
-        feed.appendChild(msg);
-        
-        // Remove after animation
-        setTimeout(() => {
-            if (msg.parentNode) msg.parentNode.removeChild(msg);
-        }, 5000);
-    }
-};
-
-// Scoreboard Toggle
-document.addEventListener('keydown', (e) => {
-    if (e.code === 'Tab') {
-        e.preventDefault(); // Prevent focus change
-        const sb = document.getElementById('scoreboard');
-        if (sb) sb.classList.remove('hidden');
-    }
-});
-
-document.addEventListener('keyup', (e) => {
-    if (e.code === 'Tab') {
-        const sb = document.getElementById('scoreboard');
-        if (sb) sb.classList.add('hidden');
-    }
-});
