@@ -472,8 +472,9 @@ networkManager.onPlayerListUpdate = (players) => {
 
 networkManager.onGameStarted = () => {
     console.log("Game Started!");
-    hide(lobbyMenu);
-    show(startMenu);
+    if (lobbyMenu) lobbyMenu.classList.add('hidden');
+    const startScreen = document.getElementById('start-screen');
+    if (startScreen) startScreen.style.display = 'none';
 };
 
 if (btnHost) {
@@ -547,7 +548,6 @@ if (btnJoin) {
 }
 
 // Start Menu Logic
-const startMenu = document.getElementById('start-menu');
 const ui = document.getElementById('ui');
 let gameStarted = false;
 
@@ -559,25 +559,24 @@ document.body.appendChild(scoreUI);
 // Start Screen Logic
 const startScreen = document.getElementById('start-screen');
 const startBtn = document.getElementById('start-btn');
-const lobbyMenuEl = document.getElementById('lobby-menu');
 
 console.log('Start Screen Element:', startScreen); 
-console.log('Lobby Menu Element:', lobbyMenuEl);
+console.log('Lobby Menu Element:', lobbyMenu);
 
 if (startBtn && startScreen) {
     startBtn.addEventListener('click', () => {
         console.log('Start button clicked');
         startScreen.style.display = 'none';
-        if (lobbyMenuEl) {
-            lobbyMenuEl.style.display = 'flex';
-            lobbyMenuEl.classList.remove('hidden'); // Ensure hidden class is removed
+        if (lobbyMenu) {
+            lobbyMenu.style.display = 'flex';
+            lobbyMenu.classList.remove('hidden');
         } else {
             console.error("Lobby menu not found!");
         }
     });
     // Show start screen on load
     startScreen.style.display = 'flex';
-    if (lobbyMenuEl) lobbyMenuEl.style.display = 'none';
+    if (lobbyMenu) lobbyMenu.style.display = 'none';
 }
 
 // Remove old listener if it exists (it was replaced above, but just to be safe regarding the old button code)
