@@ -965,6 +965,16 @@ export class VoxelWorld {
         const tDz = cz - c.z;
         if (Math.sqrt(tDx*tDx + tDz*tDz) < 15) return { exists: false };
 
+        // Check Pond (using trunk position cx, cz)
+        const pDx = cx - (c.x - 30);
+        const pDz = cz - c.z;
+        if (Math.sqrt(pDx*pDx + pDz*pDz) < 15) return { exists: false }; // Increased radius slightly to clear banks
+
+        // Check River (using trunk position cx, cz)
+        const rDx = cx - c.x;
+        const rDz = cz - c.z;
+        if (rDx < -25 && Math.abs(rDz) < 6) return { exists: false }; // Clear river area
+
         const H = 10 + Math.floor(treeHash * 5); // 10-14 height
         const localY = y - groundY;
         
