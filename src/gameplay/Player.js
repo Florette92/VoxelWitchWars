@@ -544,23 +544,45 @@ export class Player {
     createBroom() {
         const broomGroup = new THREE.Group();
         
-        // Handle
-        const handleGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.5, 8);
-        const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-        const handle = new THREE.Mesh(handleGeo, woodMat);
-        handle.rotation.x = Math.PI / 2; // Align along Z axis
+        // Materials
+        const handleMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 }); // Dark Wood
+        const bandMat = new THREE.MeshStandardMaterial({ color: 0x3e2723 }); // Darker band
+        const bristleMat = new THREE.MeshStandardMaterial({ color: 0xd4a017 }); // Golden/Orange
+
+        // 1. Handle (Long stick)
+        const handleGeo = new THREE.BoxGeometry(0.05, 0.05, 2.0);
+        const handle = new THREE.Mesh(handleGeo, handleMat);
+        handle.position.z = -0.5; 
         broomGroup.add(handle);
 
-        // Bristles
-        const bristleGeo = new THREE.ConeGeometry(0.2, 0.6, 16);
-        const bristleMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c }); // Tan
-        const bristles = new THREE.Mesh(bristleGeo, bristleMat);
-        bristles.rotation.x = Math.PI / 2; // Point back
-        bristles.position.z = 1.2; // Back of the broom (+Z)
-        broomGroup.add(bristles);
+        // 2. Connector Band
+        const bandGeo = new THREE.BoxGeometry(0.07, 0.07, 0.1);
+        const band = new THREE.Mesh(bandGeo, bandMat);
+        band.position.z = 0.55; 
+        broomGroup.add(band);
+
+        // 3. Bristles (Voxel style)
+        const bristleGroup = new THREE.Group();
+        bristleGroup.position.z = 0.6;
+
+        // Core
+        const b1 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.15, 0.4), bristleMat);
+        b1.position.z = 0.2;
+        bristleGroup.add(b1);
+
+        // Fluff (Top/Bottom/Left/Right) - making it look like the voxel ball in the image
+        const b2 = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.1, 0.3), bristleMat);
+        b2.position.z = 0.2;
+        bristleGroup.add(b2);
+
+        const b3 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.25, 0.3), bristleMat);
+        b3.position.z = 0.2;
+        bristleGroup.add(b3);
+
+        broomGroup.add(bristleGroup);
 
         // Position relative to player
-        broomGroup.position.set(0, 0.6, 0); // Slightly lower to sit on
+        broomGroup.position.set(0, 0.6, 0); 
         
         return broomGroup;
     }
