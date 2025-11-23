@@ -8,17 +8,98 @@ import { NetworkManager } from './core/NetworkManager.js';
 import { RemotePlayer } from './gameplay/RemotePlayer.js';
 
 // --- UI SETUP (Run immediately) ---
+console.log("Voxel Witch Wars v1.1 Loaded");
 const startScreen = document.getElementById('start-screen');
 const startBtn = document.getElementById('start-btn');
 const lobbyMenu = document.getElementById('lobby-menu');
+const gamemodeMenu = document.getElementById('gamemode-menu');
+const campaignMenu = document.getElementById('campaign-menu');
 
 if (startBtn && startScreen) {
     startBtn.addEventListener('click', () => {
         console.log('Start button clicked');
         startScreen.style.display = 'none';
+        if (gamemodeMenu) {
+            gamemodeMenu.classList.remove('hidden');
+            gamemodeMenu.style.display = 'flex';
+        }
+    });
+}
+
+// Game Mode Menu Listeners
+const btnModeMultiplayer = document.getElementById('btn-mode-multiplayer');
+const btnModeCampaign = document.getElementById('btn-mode-campaign');
+
+if (btnModeMultiplayer) {
+    btnModeMultiplayer.addEventListener('click', () => {
+        if (gamemodeMenu) gamemodeMenu.classList.add('hidden');
         if (lobbyMenu) {
-            lobbyMenu.style.display = 'flex';
             lobbyMenu.classList.remove('hidden');
+            lobbyMenu.style.display = 'flex';
+            const title = lobbyMenu.querySelector('h1');
+            if (title) title.textContent = "Multiplayer Lobby";
+        }
+    });
+}
+
+if (btnModeCampaign) {
+    btnModeCampaign.addEventListener('click', () => {
+        if (gamemodeMenu) gamemodeMenu.classList.add('hidden');
+        if (campaignMenu) {
+            campaignMenu.classList.remove('hidden');
+            campaignMenu.style.display = 'flex';
+        }
+    });
+}
+
+// Campaign Menu Listeners
+const btnCampaignSingle = document.getElementById('btn-campaign-single');
+const btnCampaignCoop = document.getElementById('btn-campaign-coop');
+const btnCampaignBack = document.getElementById('btn-campaign-back');
+
+if (btnCampaignBack) {
+    btnCampaignBack.addEventListener('click', () => {
+        if (campaignMenu) campaignMenu.classList.add('hidden');
+        if (gamemodeMenu) {
+            gamemodeMenu.classList.remove('hidden');
+            gamemodeMenu.style.display = 'flex';
+        }
+    });
+}
+
+if (btnCampaignSingle) {
+    btnCampaignSingle.addEventListener('click', () => {
+        if (campaignMenu) campaignMenu.classList.add('hidden');
+        if (lobbyMenu) {
+            lobbyMenu.classList.remove('hidden');
+            lobbyMenu.style.display = 'flex';
+            const title = lobbyMenu.querySelector('h1');
+            if (title) title.textContent = "Campaign (Singleplayer)";
+            // Here we could auto-trigger hosting or set a game mode flag
+        }
+    });
+}
+
+if (btnCampaignCoop) {
+    btnCampaignCoop.addEventListener('click', () => {
+        if (campaignMenu) campaignMenu.classList.add('hidden');
+        if (lobbyMenu) {
+            lobbyMenu.classList.remove('hidden');
+            lobbyMenu.style.display = 'flex';
+            const title = lobbyMenu.querySelector('h1');
+            if (title) title.textContent = "Campaign (Co-op)";
+        }
+    });
+}
+
+// Lobby Back Button
+const btnLobbyBack = document.getElementById('btn-lobby-back');
+if (btnLobbyBack) {
+    btnLobbyBack.addEventListener('click', () => {
+        if (lobbyMenu) lobbyMenu.classList.add('hidden');
+        if (gamemodeMenu) {
+            gamemodeMenu.classList.remove('hidden');
+            gamemodeMenu.style.display = 'flex';
         }
     });
 }

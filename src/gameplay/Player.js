@@ -19,66 +19,25 @@ export class Player {
         this.networkInterval = 0.05; // 20 updates per second
 
         // Player Mesh (Witch Model)
-        this.mesh = new THREE.Group();
+        const charData = this.createCharacterMesh();
+        this.mesh = charData.mesh;
         this.mesh.position.set(10, 20, 10);
         
-        // Body (Robe)
-        const bodyGeo = new THREE.ConeGeometry(0.5, 1.5, 8);
-        this.bodyMat = new THREE.MeshStandardMaterial({ color: 0x2a0a4d }); // Dark purple
-        const body = new THREE.Mesh(bodyGeo, this.bodyMat);
-        body.position.y = 0.75;
-        this.mesh.add(body);
-
-        // Head
-        const headGeo = new THREE.SphereGeometry(0.3, 8, 8);
-        const headMat = new THREE.MeshStandardMaterial({ color: 0xffccaa }); // Skin tone
-        const head = new THREE.Mesh(headGeo, headMat);
-        head.position.y = 1.6;
-        this.mesh.add(head);
-
-        // Hat Brim
-        const brimGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.05, 8);
-        this.hatMat = new THREE.MeshStandardMaterial({ color: 0x111111 }); // Black
-        const brim = new THREE.Mesh(brimGeo, this.hatMat);
-        brim.position.y = 1.85;
-        this.mesh.add(brim);
-
-        // Hat Cone
-        const hatConeGeo = new THREE.ConeGeometry(0.3, 0.8, 8);
-        const hatCone = new THREE.Mesh(hatConeGeo, this.hatMat);
-        hatCone.position.y = 2.2;
-        hatCone.rotation.x = -0.2; // Tilted back slightly
-        this.mesh.add(hatCone);
-
-        // Hands
-        const handGeo = new THREE.SphereGeometry(0.12, 8, 8);
-        
-        const leftHand = new THREE.Mesh(handGeo, headMat);
-        leftHand.position.set(-0.4, 1.0, 0.3);
-        this.mesh.add(leftHand);
-
-        const rightHand = new THREE.Mesh(handGeo, headMat);
-        rightHand.position.set(0.4, 1.0, 0.3);
-        this.mesh.add(rightHand);
-
         // Wand
         this.wand = this.createWand();
-        // Align with right hand
-        this.wand.position.copy(rightHand.position);
-        // Adjust so the hand holds the lower part of the shaft
-        this.wand.position.y += 0.3; 
-        
-        // Tilt 25 degrees away from body
-        this.wand.rotation.z = -25 * (Math.PI / 180);
-        // Compensate for rotation to keep handle in hand
-        this.wand.position.x += 0.12;
-
-        this.mesh.add(this.wand);
+        // Attach to right hand
+        // Since rightHand is inside rightArm, we need to be careful with transforms
+        // Or just attach to the arm group
+        charData.rightArm.add(this.wand);
+        this.wand.position.set(0, -0.4, 0.2); // In hand
+        this.wand.rotation.x = Math.PI / 2; // Point forward
 
         // Broom (Vehicle)
         this.broom = this.createBroom();
         this.broom.visible = false; // Hidden by default
         this.mesh.add(this.broom);
+        // Adjust broom position to sit under the character
+        this.broom.position.set(0, 0.5, 0);
 
         if (initialPosition) {
             this.mesh.position.copy(initialPosition);
@@ -501,14 +460,11 @@ export class Player {
             // Create a 3x3 wall
             for(let x = -1; x <= 1; x++) {
                 for(let y = 0; y < 3; y++) {
-                    // Rotate offset based on player rotation? For simplicity, just a wall perpendicular to world axes for now, 
-                    // or just a block in front. Let's do a simple block for now to test.
-                    // Better: Wall perpendicular to look direction.
-                    
                     // Simplified: Just place 3 blocks high at target
-                    this.world.setBlock(bx, by + y, bz, 2); // 2 = Ice
+                    // Use addBlock with Ice color (0x88ccff)
+                    this.world.addBlock(bx, by + y, bz, 0x88ccff); 
                     if (this.networkManager) {
-                        this.networkManager.sendBlockUpdate(bx, by + y, bz, 2);
+                        this.networkManager.sendBlockUpdate(bx, by + y, bz, 2); // 2 = Ice ID for network
                     }
                 }
             }
@@ -610,6 +566,144 @@ export class Player {
         return broomGroup;
     }
 
+    createCharacterMesh() {
+        const mesh = new THREE.Group();
+        
+        // Colors
+        const skinColor = 0xffccaa;
+        const robeColor = 0x4b0082; // Indigo/Purple
+        const hatColor = 0x330066; // Darker Purple
+        const hatBandColor = 0xff0000; // Red
+        const hairColor = 0xffa500; // Orange
+        const bootColor = 0x111111;
+
+        // 1. Body (Robe) - Voxel Box
+        const bodyGeo = new THREE.BoxGeometry(0.5, 0.8, 0.4);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: robeColor });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.9; // Legs are below
+        mesh.add(body);
+
+        // 2. Skirt/Robe Bottom
+        const skirtGeo = new THREE.BoxGeometry(0.6, 0.6, 0.5);
+        const skirt = new THREE.Mesh(skirtGeo, bodyMat);
+        skirt.position.y = 0.3;
+        mesh.add(skirt);
+
+        // 3. Head
+        const headGeo = new THREE.BoxGeometry(0.35, 0.35, 0.35);
+        const headMat = new THREE.MeshStandardMaterial({ color: skinColor });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 1.5;
+        mesh.add(head);
+
+        // 4. Hair
+        const hairMat = new THREE.MeshStandardMaterial({ color: hairColor });
+        
+        // Back Hair
+        const hairBack = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.15), hairMat);
+        hairBack.position.set(0, 1.5, -0.2);
+        mesh.add(hairBack);
+
+        // Side Hair
+        const hairL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.4), hairMat);
+        hairL.position.set(-0.2, 1.5, 0);
+        mesh.add(hairL);
+        
+        const hairR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.4), hairMat);
+        hairR.position.set(0.2, 1.5, 0);
+        mesh.add(hairR);
+
+        // 5. Hat
+        const hatGroup = new THREE.Group();
+        const hatMat = new THREE.MeshStandardMaterial({ color: hatColor });
+        const bandMat = new THREE.MeshStandardMaterial({ color: hatBandColor });
+
+        // Brim
+        const brim = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 0.8), hatMat);
+        brim.position.y = 1.7;
+        hatGroup.add(brim);
+
+        // Base
+        const h1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.5), hatMat);
+        h1.position.y = 1.9;
+        hatGroup.add(h1);
+
+        // Band
+        const band = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.15, 0.45), bandMat);
+        band.position.y = 2.1;
+        hatGroup.add(band);
+
+        // Cone steps
+        const h2 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.3, 0.35), hatMat);
+        h2.position.y = 2.3;
+        hatGroup.add(h2);
+
+        const h3 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.2), hatMat);
+        h3.position.y = 2.6;
+        hatGroup.add(h3);
+        
+        // Bent tip
+        const h4 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.15), hatMat);
+        h4.position.set(0.1, 2.8, 0); // Offset slightly
+        h4.rotation.z = -0.2;
+        hatGroup.add(h4);
+
+        mesh.add(hatGroup);
+
+        // 6. Arms
+        const armGeo = new THREE.BoxGeometry(0.15, 0.5, 0.15);
+        const armMat = new THREE.MeshStandardMaterial({ color: robeColor });
+        
+        const leftArm = new THREE.Mesh(armGeo, armMat);
+        leftArm.position.set(-0.35, 1.0, 0);
+        leftArm.rotation.z = 0.2;
+        mesh.add(leftArm);
+
+        const rightArm = new THREE.Mesh(armGeo, armMat);
+        rightArm.position.set(0.35, 1.0, 0);
+        rightArm.rotation.z = -0.2;
+        mesh.add(rightArm);
+
+        // Hands
+        const handGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+        const handMat = new THREE.MeshStandardMaterial({ color: skinColor });
+        
+        const lHand = new THREE.Mesh(handGeo, handMat);
+        lHand.position.set(0, -0.3, 0);
+        leftArm.add(lHand);
+
+        const rHand = new THREE.Mesh(handGeo, handMat);
+        rHand.position.set(0, -0.3, 0);
+        rightArm.add(rHand);
+
+        // 7. Legs/Boots
+        const legGeo = new THREE.BoxGeometry(0.15, 0.4, 0.15);
+        const bootMat = new THREE.MeshStandardMaterial({ color: bootColor });
+        
+        const leftLeg = new THREE.Mesh(legGeo, bootMat);
+        leftLeg.position.set(-0.15, 0.2, 0);
+        mesh.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(legGeo, bootMat);
+        rightLeg.position.set(0.15, 0.2, 0);
+        mesh.add(rightLeg);
+
+        // Face Features
+        const eyeGeo = new THREE.BoxGeometry(0.05, 0.05, 0.05);
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+        
+        const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+        leftEye.position.set(-0.1, 1.55, 0.18);
+        mesh.add(leftEye);
+
+        const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+        rightEye.position.set(0.1, 1.55, 0.18);
+        mesh.add(rightEye);
+
+        return { mesh, rightArm, leftArm, rightHand: rHand };
+    }
+
     checkCollision(position) {
         // Simple point collision for now
         // Check feet
@@ -658,7 +752,7 @@ export class Player {
         
         if (this.input.isMouseButtonDown(0)) {
             if (performance.now() - this.lastBuildTime > this.buildCooldown * 1000) {
-                this.world.setBlock(bx, by, bz, 1); // 1 = Stone/Dirt
+                this.world.addBlock(bx, by, bz, 0x555555); // Stone color
                 this.lastBuildTime = performance.now();
                 if (this.networkManager) {
                     this.networkManager.sendBlockUpdate(bx, by, bz, 1);
@@ -666,7 +760,7 @@ export class Player {
             }
         } else if (this.input.isMouseButtonDown(2)) {
              if (performance.now() - this.lastBuildTime > this.buildCooldown * 1000) {
-                this.world.setBlock(bx, by, bz, 0); // 0 = Air
+                this.world.removeBlock(bx, by, bz);
                 this.lastBuildTime = performance.now();
                 if (this.networkManager) {
                     this.networkManager.sendBlockUpdate(bx, by, bz, 0);

@@ -7,35 +7,10 @@ export class RemotePlayer {
         this.team = data.team;
         
         // Mesh Group
-        this.mesh = new THREE.Group();
+        const charData = this.createCharacterMesh();
+        this.mesh = charData.mesh;
         this.mesh.position.set(data.x, data.y, data.z);
         
-        // Body (Robe)
-        const bodyGeo = new THREE.ConeGeometry(0.5, 1.5, 8);
-        let color = 0x2a0a4d;
-        if (this.team === 'red') color = 0xff0000;
-        else if (this.team === 'blue') color = 0x0000ff;
-
-        this.bodyMat = new THREE.MeshStandardMaterial({ color: color }); 
-        const body = new THREE.Mesh(bodyGeo, this.bodyMat);
-        body.position.y = 0.75;
-        this.mesh.add(body);
-
-        // Head
-        const headGeo = new THREE.SphereGeometry(0.3, 8, 8);
-        const headMat = new THREE.MeshStandardMaterial({ color: 0xffccaa });
-        const head = new THREE.Mesh(headGeo, headMat);
-        head.position.y = 1.6;
-        this.mesh.add(head);
-
-        // Hat
-        const hatConeGeo = new THREE.ConeGeometry(0.3, 0.8, 8);
-        const hatMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-        const hatCone = new THREE.Mesh(hatConeGeo, hatMat);
-        hatCone.position.y = 2.2;
-        hatCone.rotation.x = -0.2;
-        this.mesh.add(hatCone);
-
         // Name Tag
         const name = data.name || "Unknown";
         const nameSprite = this.createNameSprite(name);
@@ -115,5 +90,146 @@ export class RemotePlayer {
 
     dispose() {
         this.scene.remove(this.mesh);
+    }
+
+    createCharacterMesh() {
+        const mesh = new THREE.Group();
+        
+        // Colors
+        const skinColor = 0xffccaa;
+        let robeColor = 0x4b0082; // Default Indigo/Purple
+        if (this.team === 'red') robeColor = 0xff0000;
+        else if (this.team === 'blue') robeColor = 0x0000ff;
+
+        const hatColor = 0x330066; // Darker Purple
+        const hatBandColor = 0xff0000; // Red
+        const hairColor = 0xffa500; // Orange
+        const bootColor = 0x111111;
+
+        // 1. Body (Robe) - Voxel Box
+        const bodyGeo = new THREE.BoxGeometry(0.5, 0.8, 0.4);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: robeColor });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.9; // Legs are below
+        mesh.add(body);
+
+        // 2. Skirt/Robe Bottom
+        const skirtGeo = new THREE.BoxGeometry(0.6, 0.6, 0.5);
+        const skirt = new THREE.Mesh(skirtGeo, bodyMat);
+        skirt.position.y = 0.3;
+        mesh.add(skirt);
+
+        // 3. Head
+        const headGeo = new THREE.BoxGeometry(0.35, 0.35, 0.35);
+        const headMat = new THREE.MeshStandardMaterial({ color: skinColor });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 1.5;
+        mesh.add(head);
+
+        // 4. Hair
+        const hairMat = new THREE.MeshStandardMaterial({ color: hairColor });
+        
+        // Back Hair
+        const hairBack = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.15), hairMat);
+        hairBack.position.set(0, 1.5, -0.2);
+        mesh.add(hairBack);
+
+        // Side Hair
+        const hairL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.4), hairMat);
+        hairL.position.set(-0.2, 1.5, 0);
+        mesh.add(hairL);
+        
+        const hairR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.4), hairMat);
+        hairR.position.set(0.2, 1.5, 0);
+        mesh.add(hairR);
+
+        // 5. Hat
+        const hatGroup = new THREE.Group();
+        const hatMat = new THREE.MeshStandardMaterial({ color: hatColor });
+        const bandMat = new THREE.MeshStandardMaterial({ color: hatBandColor });
+
+        // Brim
+        const brim = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 0.8), hatMat);
+        brim.position.y = 1.7;
+        hatGroup.add(brim);
+
+        // Base
+        const h1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.5), hatMat);
+        h1.position.y = 1.9;
+        hatGroup.add(h1);
+
+        // Band
+        const band = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.15, 0.45), bandMat);
+        band.position.y = 2.1;
+        hatGroup.add(band);
+
+        // Cone steps
+        const h2 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.3, 0.35), hatMat);
+        h2.position.y = 2.3;
+        hatGroup.add(h2);
+
+        const h3 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.2), hatMat);
+        h3.position.y = 2.6;
+        hatGroup.add(h3);
+        
+        // Bent tip
+        const h4 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.2, 0.15), hatMat);
+        h4.position.set(0.1, 2.8, 0); // Offset slightly
+        h4.rotation.z = -0.2;
+        hatGroup.add(h4);
+
+        mesh.add(hatGroup);
+
+        // 6. Arms
+        const armGeo = new THREE.BoxGeometry(0.15, 0.5, 0.15);
+        const armMat = new THREE.MeshStandardMaterial({ color: robeColor });
+        
+        const leftArm = new THREE.Mesh(armGeo, armMat);
+        leftArm.position.set(-0.35, 1.0, 0);
+        leftArm.rotation.z = 0.2;
+        mesh.add(leftArm);
+
+        const rightArm = new THREE.Mesh(armGeo, armMat);
+        rightArm.position.set(0.35, 1.0, 0);
+        rightArm.rotation.z = -0.2;
+        mesh.add(rightArm);
+
+        // Hands
+        const handGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+        const handMat = new THREE.MeshStandardMaterial({ color: skinColor });
+        
+        const lHand = new THREE.Mesh(handGeo, handMat);
+        lHand.position.set(0, -0.3, 0);
+        leftArm.add(lHand);
+
+        const rHand = new THREE.Mesh(handGeo, handMat);
+        rHand.position.set(0, -0.3, 0);
+        rightArm.add(rHand);
+
+        // 7. Legs/Boots
+        const legGeo = new THREE.BoxGeometry(0.15, 0.4, 0.15);
+        const bootMat = new THREE.MeshStandardMaterial({ color: bootColor });
+        
+        const leftLeg = new THREE.Mesh(legGeo, bootMat);
+        leftLeg.position.set(-0.15, 0.2, 0);
+        mesh.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(legGeo, bootMat);
+        rightLeg.position.set(0.15, 0.2, 0);
+        mesh.add(rightLeg);
+
+        // Face Features
+        const eyeGeo = new THREE.BoxGeometry(0.05, 0.05, 0.05);
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+        
+        const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+        leftEye.position.set(-0.1, 1.55, 0.18);
+        mesh.add(leftEye);
+
+        const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+        rightEye.position.set(0.1, 1.55, 0.18);
+        mesh.add(rightEye);
+
+        return { mesh, rightArm, leftArm, rightHand: rHand };
     }
 }
