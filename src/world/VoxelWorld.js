@@ -651,6 +651,27 @@ export class VoxelWorld {
                 return 0;
             }
 
+            // Volcanic Biome: New Grid System
+            if (c.type === 'volcanic') {
+                const GRID = 14;
+                const gx = Math.floor(ix / GRID);
+                const gz = Math.floor(iz / GRID);
+                const cx = gx * GRID + 7;
+                const cz = gz * GRID + 7;
+                
+                if (ix === cx && iz === cz) {
+                    const treeHash = this.hash(gx, gz);
+                    if (treeHash >= 0.5) {
+                        const ctDx = cx - c.x;
+                        const ctDz = cz - c.z;
+                        if (Math.max(Math.abs(ctDx), Math.abs(ctDz)) >= 12) {
+                            return 12 + Math.floor(treeHash * 4);
+                        }
+                    }
+                }
+                return 0;
+            }
+
             // Other Biomes: Old System
             const treeNoise = this.noise2D(ix * 0.3, iz * 0.3);
             if (treeNoise > 0.6 && (ix % 3 === 0) && (iz % 3 === 0)) {
@@ -928,6 +949,8 @@ export class VoxelWorld {
 
         if (biome === 'ice') {
             return this.getIceTreeBlock(x, y, z, groundY);
+        } else if (biome === 'volcanic') {
+            return this.getFireTreeBlock(x, y, z, groundY);
         }
 
         // 1. Legacy Trees (1x1 Columns) for other biomes
@@ -941,6 +964,132 @@ export class VoxelWorld {
         }
 
         // 2. Small Mushrooms - Removed
+        return { exists: false };
+    }
+
+    getFireTreeBlock(x, y, z, groundY) {
+        const GRID = 14; // Spacing
+        const gx = Math.floor(x / GRID);
+        const gz = Math.floor(z / GRID);
+        const cx = gx * GRID + 7;
+        const cz = gz * GRID + 7;
+        
+        // Check existence
+        const treeHash = this.hash(gx, gz);
+        if (treeHash < 0.5) return { exists: false }; // 50% chance
+        
+        // Check biome/island
+        const islandData = this.getIslandData(cx, cz);
+        if (!islandData.isIsland || islandData.center.type !== 'volcanic') return { exists: false };
+        
+        // Distance from tower
+        const c = islandData.center;
+        const tDx = cx - c.x;
+        const tDz = cz - c.z;
+        // Volcanic tower is square, check max dist
+        if (Math.max(Math.abs(tDx), Math.abs(tDz)) < 12) return { exists: false };
+
+        // Check Pond/Lava Pool
+        const pDx = cx - (c.x - 30);
+        const pDz = cz - c.z;
+        if (Math.sqrt(pDx*pDx + pDz*pDz) < 15) return { exists: false };
+
+        // Check River/Lava River
+        const rDx = cx - c.x;
+        const rDz = cz - c.z;
+        if (rDx < -25 && Math.abs(rDz) < 6) return { exists: false };
+
+        const H = 12 + Math.floor(treeHash * 4); // 12-16 height
+        const localY = y - groundY;
+        
+        // Floating Embers (above tree)
+        if (localY > H && localY < H + 4) {
+            const emberHash = this.hash(x, y * z * 1.1);
+            if (emberHash > 0.98) {
+                const dx = x - cx;
+                const dz = z - cz;
+                if (Math.abs(dx) <= 2 && Math.abs(dz) <= 2) {
+                    return { exists: true, color: 0xFFAA00 }; // Bright Orange Ember
+                }
+            }
+        }
+
+        if (localY < 0 || localY > H) return { exists: false };
+        
+        const dx = x - cx;
+        const dz = z - cz;
+        const adx = Math.abs(dx);
+        const adz = Math.abs(dz);
+        const distSq = dx*dx + dz*dz;
+        
+        // Roots (Base)
+        if (localY === 0) {
+            // Cross shape roots
+            if ((adx <= 2 && adz === 0) || (adz <= 2 && adx === 0) || (adx === 1 && adz === 1)) {
+                 return { exists: true, color: 0x331100 }; // Dark Charred Wood
+            }
+        }
+        if (localY === 1) {
+             if ((adx <= 1 && adz === 0) || (adz <= 1 && adx === 0)) {
+                 return { exists: true, color: 0x331100 };
+            }
+        }
+
+        // Trunk
+        if (adx === 0 && adz === 0 && localY < H/2) {
+             return { exists: true, color: 0x331100 }; // Dark Charred Wood
+        }
+        
+        // Flame Canopy (Tapered)
+        // Shape: Wide at bottom (but above trunk), pointy at top
+        // Starts around localY = 4 or 5
+        
+        const canopyStart = 4;
+        if (localY >= canopyStart) {
+            const canopyH = H - canopyStart;
+            const progress = (localY - canopyStart) / canopyH; // 0 to 1
+            
+            // Flame shape radius
+            // 0 -> small (bottom)
+            // 0.2 -> wide
+            // 1.0 -> point
+            
+            let radius = 0;
+            if (progress < 0.2) radius = 2;
+            else if (progress < 0.5) radius = 2;
+            else if (progress < 0.8) radius = 1;
+            else radius = 0;
+            
+            // Add some noise to radius for "flicker" shape
+            // const shapeNoise = this.hash(x, y);
+            // if (shapeNoise > 0.8) radius -= 1;
+
+            // Manhattan distance for diamond/flame shape look
+            const manhattan = adx + adz;
+            
+            if (manhattan <= radius + 0.5) { // +0.5 for smoothing
+                // Color Gradient
+                // Bottom: Red/Dark Orange
+                // Middle: Orange
+                // Top: Yellow
+                
+                let color = 0xFF4500; // Red-Orange
+                if (progress > 0.7) color = 0xFFD700; // Gold/Yellow
+                else if (progress > 0.4) color = 0xFFA500; // Orange
+                else if (progress > 0.2) color = 0xFF6600; // Dark Orange
+                else color = 0xCC2200; // Dark Red (Bottom)
+                
+                // Add random variation
+                const noise = this.hash(x, y * z);
+                if (noise > 0.8) {
+                    // Sparkle/Hot spot
+                    color = 0xFFFF00; 
+                }
+                
+                return { exists: true, color: color };
+            }
+        }
+        
         return { exists: false };
     }
 
