@@ -1,23 +1,34 @@
 import * as THREE from 'three';
 
 export class Projectile {
-    constructor(scene, position, direction, particleSystem, soundManager) {
+    constructor(scene, position, direction, particleSystem, soundManager, type = 'normal') {
         this.scene = scene;
         this.particleSystem = particleSystem;
         this.soundManager = soundManager;
+        this.type = type;
         this.velocity = direction.clone().normalize().multiplyScalar(60); // Speed
         this.isAlive = true;
         this.lifeTime = 1.5; // Seconds
         this.damage = 10;
 
         // Visuals
-        const geometry = new THREE.SphereGeometry(0.3, 8, 8);
-        const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+        let color = 0x00ffff;
+        let size = 0.3;
+        
+        if (this.type === 'fireball') {
+            color = 0xff4400;
+            size = 0.6;
+            this.damage = 30;
+            this.lifeTime = 3.0;
+        }
+
+        const geometry = new THREE.SphereGeometry(size, 8, 8);
+        const material = new THREE.MeshBasicMaterial({ color: color });
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.copy(position);
         
         // Add a point light to the projectile
-        this.light = new THREE.PointLight(0x00ffff, 1, 10);
+        this.light = new THREE.PointLight(color, 1, 10);
         this.mesh.add(this.light);
         
         this.scene.add(this.mesh);
@@ -41,7 +52,7 @@ export class Projectile {
             for (const [id, rp] of remotePlayers) {
                 // Simple sphere check
                 const distToPlayer = this.mesh.position.distanceTo(rp.mesh.position);
-                if (distToPlayer < 1.5) { // Hit radius
+                if (distToPlayer < (this.type === 'fireball' ? 3.0 : 1.5)) { // Hit radius
                     this.onHitPlayer(id);
                     return;
                 }
@@ -55,9 +66,30 @@ export class Projectile {
             // Move to hit point
             this.mesh.position.copy(hit.point);
             
-            // Remove block
-            if (hit.block) {
-                world.removeBlock(hit.block.x, hit.block.y, hit.block.z);
+            if (this.type === 'fireball') {
+                // Explosion Logic
+                const radius = 3;
+                const cx = Math.floor(hit.point.x);
+                const cy = Math.floor(hit.point.y);
+                const cz = Math.floor(hit.point.z);
+                
+                for (let x = -radius; x <= radius; x++) {
+                    for (let y = -radius; y <= radius; y++) {
+                        for (let z = -radius; z <= radius; z++) {
+                            if (x*x + y*y + z*z <= radius*radius) {
+                                world.removeBlock(cx+x, cy+y, cz+z);
+                                // Extra damage for fireball to ensure destruction
+                                world.removeBlock(cx+x, cy+y, cz+z);
+                                world.removeBlock(cx+x, cy+y, cz+z);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Remove block
+                if (hit.block) {
+                    world.removeBlock(hit.block.x, hit.block.y, hit.block.z);
+                }
             }
             
             this.onHit();

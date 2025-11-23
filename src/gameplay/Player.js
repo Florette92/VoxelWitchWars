@@ -103,6 +103,11 @@ export class Player {
         this.projectiles = [];
         this.lastShotTime = 0;
         this.shootCooldown = 0.3; // Seconds
+        this.abilityCooldown = 5.0;
+        this.lastAbilityTime = 0;
+        this.dashCooldown = 3.0;
+        this.lastDashTime = 0;
+        this.team = 'spectator'; // Default
 
         // Build Mode
         this.isBuildMode = false;
@@ -205,6 +210,15 @@ export class Player {
         this.rotation.y -= mouseMove.x * 0.002;
         this.rotation.x -= mouseMove.y * 0.002;
         this.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.rotation.x));
+
+        // Dash Ability (Shift)
+        if (this.input.isKeyDown('ShiftLeft') && !this.isFlying) {
+            const now = performance.now() / 1000;
+            if (now - this.lastDashTime > this.dashCooldown) {
+                this.performDash();
+                this.lastDashTime = now;
+            }
+        }
 
         const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.rotation.y);
         const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.rotation.y);
@@ -345,305 +359,72 @@ export class Player {
 
     setTeam(team) {
         this.team = team;
-        let robeColor = 0x2a0a4d;
-        
-        if (team === 'red') {
-            robeColor = 0xff0000;
-        } else if (team === 'blue') {
-            robeColor = 0x0000ff;
-        }
-
-        this.bodyMat.color.setHex(robeColor);
+        // Update visuals if needed
     }
 
-    updateOutfit() {
-        const islandData = this.world.getIslandData(this.mesh.position.x, this.mesh.position.z);
-        let newBiome = 'forest'; // Default
-        
-        if (islandData.isIsland) {
-            newBiome = islandData.center.type;
-        }
-
-        if (this.currentBiome !== newBiome) {
-            this.currentBiome = newBiome;
-            
-            let robeColor = 0x2a0a4d;
-            let hatColor = 0x111111;
-
-            switch (newBiome) {
-                case 'ice':
-                    robeColor = 0x88ccff; // Light Blue
-                    hatColor = 0x003366; // Dark Blue
-                    break;
-                case 'arcane':
-                    robeColor = 0x4B0082; // Indigo
-                    hatColor = 0xFFD700; // Gold
-                    break;
-                case 'volcanic':
-                    robeColor = 0x800000; // Maroon
-                    hatColor = 0x222222; // Dark Grey
-                    break;
-                case 'forest':
-                default:
-                    robeColor = 0x2a0a4d; // Dark Purple
-                    hatColor = 0x111111; // Black
-                    break;
+    performDash() {
+        const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), this.rotation.y);
+        this.velocity.add(forward.multiplyScalar(40)); // Burst of speed
+        if (this.soundManager) this.soundManager.playJump(); // Reuse jump sound or add dash sound
+        if (this.particleSystem) {
+            // Trail effect
+            for(let i=0; i<10; i++) {
+                this.particleSystem.emit(this.mesh.position.clone(), 0xffffff, 5);
             }
-
-            this.bodyMat.color.setHex(robeColor);
-            this.hatMat.color.setHex(hatColor);
         }
     }
 
-    createWand() {
-        const wandGroup = new THREE.Group();
-
-        // Shaft
-        const shaftGeo = new THREE.BoxGeometry(0.04, 1.2, 0.04);
-        const shaftMat = new THREE.MeshStandardMaterial({ color: 0x4a3c31 });
-        const shaft = new THREE.Mesh(shaftGeo, shaftMat);
-        shaft.position.y = 0;
-        wandGroup.add(shaft);
-
-        // Gems (Blue glowing bits)
-        const gemGeo = new THREE.BoxGeometry(0.06, 0.06, 0.06);
-        const gemMat = new THREE.MeshStandardMaterial({ 
-            color: 0x00ffff, 
-            emissive: 0x00ffff,
-            emissiveIntensity: 0.5
-        });
+    useAbility() {
+        const now = performance.now() / 1000;
+        if (now - this.lastAbilityTime < this.abilityCooldown) return;
         
-        for(let i=0; i<3; i++) {
-            const gem = new THREE.Mesh(gemGeo, gemMat);
-            gem.position.y = -0.2 + (i * 0.25);
-            wandGroup.add(gem);
-        }
-
-        // Head (Purple Crystal)
-        const crystalGeo = new THREE.DodecahedronGeometry(0.12);
-        const crystalMat = new THREE.MeshStandardMaterial({ 
-            color: 0x9933ff,
-            emissive: 0x5500aa,
-            emissiveIntensity: 0.8,
-            transparent: true,
-            opacity: 0.9
-        });
-        const crystal = new THREE.Mesh(crystalGeo, crystalMat);
-        crystal.position.y = 0.7;
-        wandGroup.add(crystal);
-
-        // Particles (Simple orbiting points)
-        const particleCount = 20;
-        const particleGeo = new THREE.BufferGeometry();
-        const particlePos = [];
-        for(let i=0; i<particleCount; i++) {
-            particlePos.push((Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5);
-        }
-        particleGeo.setAttribute('position', new THREE.Float32BufferAttribute(particlePos, 3));
-        const particleMat = new THREE.PointsMaterial({
-            color: 0xffdd44,
-            size: 0.05,
-            transparent: true,
-            opacity: 0.6
-        });
-        this.wandParticles = new THREE.Points(particleGeo, particleMat);
-        this.wandParticles.position.y = 0.7;
-        wandGroup.add(this.wandParticles);
-
-        // Tip Marker (Invisible, for spawning projectiles)
-        this.wandTip = new THREE.Object3D();
-        this.wandTip.position.y = 0.9; // Slightly above crystal
-        wandGroup.add(this.wandTip);
-
-        return wandGroup;
-    }
-
-    createBroom() {
-        const broomGroup = new THREE.Group();
-        
-        // Handle
-        const handleGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.5, 8);
-        const handleMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
-        const handle = new THREE.Mesh(handleGeo, handleMat);
-        handle.rotation.x = Math.PI / 2; // Horizontal along Z
-        broomGroup.add(handle);
-
-        // Bristles (Tail)
-        const bristleGeo = new THREE.ConeGeometry(0.2, 0.8, 16);
-        const bristleMat = new THREE.MeshStandardMaterial({ color: 0xeebb55 });
-        const bristles = new THREE.Mesh(bristleGeo, bristleMat);
-        bristles.rotation.x = -Math.PI / 2; // Pointing back
-        bristles.position.z = 1.4; // Behind player
-        broomGroup.add(bristles);
-
-        // Detail Ring
-        const ringGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.1, 8);
-        const ringMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        ring.rotation.x = Math.PI / 2;
-        ring.position.z = 1.0;
-        broomGroup.add(ring);
-
-        // Position relative to player center
-        // Lower it to "sit" on it (y=0.3)
-        // Tilt slightly up at the front (rotate X negative)
-        broomGroup.position.set(0, 0.3, 0);
-        broomGroup.rotation.x = -0.1; 
-        
-        return broomGroup;
-    }
-
-    shoot() {
-        // Get spawn position (Wand Tip)
-        const spawnPos = new THREE.Vector3();
-        this.wandTip.getWorldPosition(spawnPos);
-
-        // Calculate Target Point (Where the crosshair is aiming)
-        // Raycast from camera center (0, 0)
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
-        
-        // Raycast against the world to find what we are looking at
-        // Optimized: Use Voxel Raycast instead of Mesh Raycast
-        const hit = this.world.raycast(raycaster.ray.origin, raycaster.ray.direction, 100);
-        
-        const targetPoint = new THREE.Vector3();
-        
-        if (hit) {
-            // Aim at the hit point
-            targetPoint.copy(hit.point);
-        } else {
-            // Aim at a point far away
-            raycaster.ray.at(100, targetPoint);
-        }
-
-        // Calculate direction from Wand to Target
-        const direction = new THREE.Vector3().subVectors(targetPoint, spawnPos).normalize();
-
-        // Create projectile
-        const projectile = new Projectile(this.scene, spawnPos, direction, this.particleSystem, this.soundManager);
-        
-        // Callback for hitting a player
-        projectile.onPlayerHitCallback = (targetId, damage) => {
-            if (this.networkManager) {
-                this.networkManager.sendHit(targetId, damage);
-            }
-        };
-
-        this.projectiles.push(projectile);
-        
-        if (this.soundManager) this.soundManager.playShoot();
-    }
-
-    onDeath() {
-        if (this.isDead) return;
-        this.isDead = true;
-        
-        // Unlock pointer
-        document.exitPointerLock();
-        
-        // Show Menu
-        const menu = document.getElementById('respawn-menu');
-        menu.style.display = 'block';
-        
-        const btn = document.getElementById('respawn-btn');
-        btn.onclick = () => {
-            this.respawn();
-            menu.style.display = 'none';
-            document.body.requestPointerLock();
-        };
-    }
-
-    respawn() {
-        const spawn = this.spawnPoint.clone();
-        this.physicsPosition.copy(spawn);
-        this.mesh.position.copy(spawn);
-        this.velocity.set(0, 0, 0);
-        this.isDead = false;
-    }
-
-    setSpawnPoint(point) {
-        this.spawnPoint.copy(point);
-    }
-
-    checkCollision(pos) {
-        const r = 0.4; // Radius
-        const h = 1.8; // Height
-        
-        // Check multiple points to prevent clipping
-        // Center
-        if (this.world.getBlock(pos.x, pos.y, pos.z)) return true;
-        if (this.world.getBlock(pos.x, pos.y + 1, pos.z)) return true;
-        if (this.world.getBlock(pos.x, pos.y + h, pos.z)) return true;
-        
-        // Check corners
-        const offsets = [
-            [r, 0, r], [r, 0, -r], [-r, 0, r], [-r, 0, -r],
-            [r, h, r], [r, h, -r], [-r, h, r], [-r, h, -r],
-            [r, h/2, r], [r, h/2, -r], [-r, h/2, r], [-r, h/2, -r]
-        ];
-        
-        for (let o of offsets) {
-            if (this.world.getBlock(pos.x + o[0], pos.y + o[1], pos.z + o[2])) return true;
-        }
-        
-        return false;
-    }
-
-    updateBuildMode(delta) {
-        // Raycast from center of screen
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
-        
-        // Use Voxel Raycast
-        const hit = this.world.raycast(raycaster.ray.origin, raycaster.ray.direction, 8);
-        
-        if (hit) {
-            const p = hit.point;
-            const n = hit.normal;
+        if (this.team === 'red') {
+            // Fireball
+            const direction = new THREE.Vector3(0, 0, -1);
+            direction.applyEuler(this.rotation);
+            const startPos = this.mesh.position.clone().add(new THREE.Vector3(0, 1.5, 0));
+            startPos.add(direction.clone().multiplyScalar(1.0));
             
-            // Calculate block position
-            // hit.block is the block we hit
-            const bx = hit.block.x;
-            const by = hit.block.y;
-            const bz = hit.block.z;
-
-            // Adjacent (placement) coordinate
-            const ax = bx + n.x;
-            const ay = by + n.y;
-            const az = bz + n.z;
-
-            // Update Ghost Block
-            this.ghostBlock.position.set(ax + 0.5, ay + 0.5, az + 0.5);
-            this.ghostBlock.visible = true;
-
-            // Handle Input
-            this.lastBuildTime += delta;
-            if (this.lastBuildTime >= this.buildCooldown) {
-                // Left Click: Destroy
-                if (this.input.isMouseButtonDown(0)) {
-                    this.world.removeBlock(bx, by, bz);
-                    if (this.soundManager) this.soundManager.playExplosion();
-                    if (this.particleSystem) {
-                        this.particleSystem.emit(new THREE.Vector3(bx+0.5, by+0.5, bz+0.5), 0x888888, 10);
-                    }
-                    this.lastBuildTime = 0;
-                }
-                // Right Click: Place
-                else if (this.input.isMouseButtonDown(2)) {
-                    // Don't place inside player
-                    const playerPos = this.physicsPosition;
-                    const dist = new THREE.Vector3(ax+0.5, ay+0.5, az+0.5).distanceTo(playerPos);
-                    
-                    if (dist > 1.5) {
-                        this.world.addBlock(ax, ay, az, 0x885522); // Wood color default
-                        if (this.soundManager) this.soundManager.playBuild();
-                        this.lastBuildTime = 0;
-                    }
+            const proj = new Projectile(this.scene, startPos, direction, this.particleSystem, this.soundManager, 'fireball');
+            
+            // Network callback
+            proj.onPlayerHitCallback = (targetId, damage) => {
+                if (this.networkManager) this.networkManager.sendHit(targetId, damage);
+            };
+            
+            this.projectiles.push(proj);
+            this.lastAbilityTime = now;
+            
+            // Send to network so others see it? 
+            // Currently projectiles are client-side authoritative for the shooter.
+            // We might need to broadcast "spawnProjectile" if we want others to see the fireball.
+            // For now, let's keep it local + hit events.
+            
+        } else if (this.team === 'blue') {
+            // Ice Wall
+            const direction = new THREE.Vector3(0, 0, -1);
+            direction.applyEuler(this.rotation);
+            const startPos = this.mesh.position.clone().add(new THREE.Vector3(0, 1.5, 0));
+            
+            // Raycast to find placement
+            const raycaster = new THREE.Raycaster(startPos, direction, 0, 10);
+            // We don't have easy raycast against world here without world.raycast
+            // Let's just place it 3 units in front
+            const targetPos = startPos.add(direction.multiplyScalar(3));
+            const bx = Math.floor(targetPos.x);
+            const by = Math.floor(targetPos.y);
+            const bz = Math.floor(targetPos.z);
+            
+            // Create 3x3 wall
+            // Perpendicular to facing? Simplified: just a block around target
+            for(let x=-1; x<=1; x++) {
+                for(let y=0; y<3; y++) {
+                    // Simple wall logic, maybe improve orientation later
+                    this.world.addBlock(bx+x, by+y, bz, 0x88ccff); // Ice color
+                    this.world.addBlock(bx, by+y, bz+x, 0x88ccff); // Cross shape to cover angles
                 }
             }
-        } else {
-            this.ghostBlock.visible = false;
+            this.lastAbilityTime = now;
         }
     }
 }

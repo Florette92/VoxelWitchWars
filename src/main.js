@@ -733,6 +733,11 @@ function animate() {
         // Update wind sound based on speed/height
         const speed = player.velocity.length();
         soundManager.updateWind(speed);
+        
+        // Handle Abilities
+        if (player.input.isMouseButtonDown(2)) { // Right Click
+            player.useAbility();
+        }
     } else {
         // Optional: Rotate camera around the world or something for a nice intro
     }
