@@ -177,19 +177,19 @@ export class VoxelWorld {
 
                 if (biome === 'ice') {
                     grassColor = 0xFFFFFF; // Snow
-                    dirtColor = 0xDDDDFF; // Frozen Dirt
-                    stoneColor = 0xAACCFF; // Icy Stone
-                    wallColor1 = 0x446688; // Blue-Grey Stone
-                    wallColor2 = 0x557799;
-                    roofColor1 = 0x004488; // Deep Blue
-                    roofColor2 = 0x003366;
-                    woodColor = 0x332211; // Dark Pine
+                    dirtColor = 0xDDEEFF; // Frozen Dirt
+                    stoneColor = 0x888888; // Grey Stone
+                    wallColor1 = 0x777777; // Grey Stone Brick
+                    wallColor2 = 0x666666;
+                    roofColor1 = 0x2060A0; // Royal Blue
+                    roofColor2 = 0x105090;
+                    woodColor = 0x443322; // Dark Wood
                     leafColor = 0x225544; // Dark Teal
                     windowColor = 0xAAFFFF; // Cyan Glow
-                    rimColor = 0x223344;
+                    rimColor = 0x555555;
                     hatBandColor = 0xFFFFFF; // White Band
-                    waterColor = 0x88ccff; // Icy Water
-                    foamColor = 0xccffff;
+                    waterColor = 0x44AAFF; // Icy Water
+                    foamColor = 0xCCFFFF;
                 } else if (biome === 'arcane') {
                     grassColor = 0x4B0082; // Indigo
                     dirtColor = 0x2E2B5F; // Dark Purple
@@ -266,31 +266,54 @@ export class VoxelWorld {
                         }
                     }
                     
-                    // 2. Tower Structure
+                    // 2. Tower Structure (Castle Style)
                     if (isTower && y > groundY) {
                         const localY = y - groundY;
                         
-                        // Walls & Floors
-                        if (localY <= towerHeight) {
+                        // Walls & Battlements
+                        if (localY <= towerHeight + 2) {
                             // Check for floor rims (every 7 blocks)
-                            const isRim = (localY % floorHeight === 0) || (localY % floorHeight === floorHeight - 1);
-                            const currentRadius = isRim ? towerRadius + 0.5 : towerRadius;
+                            const isRim = (localY % floorHeight === 0) && localY < towerHeight;
                             
+                            // Battlements (Top of tower)
+                            const isBattlementBase = (localY === towerHeight);
+                            const isBattlementTop = (localY === towerHeight + 1);
+                            
+                            let currentRadius = towerRadius;
+                            if (isRim) currentRadius = towerRadius + 0.5;
+                            if (isBattlementBase) currentRadius = towerRadius + 1.5; // Overhang
+                            if (isBattlementTop) currentRadius = towerRadius + 1.5;
+
                             if (tDist <= currentRadius) {
                                 if (tDist > currentRadius - 1.5) {
-                                    // Wall
+                                    // Wall Logic
                                     visible = true;
                                     blockColor = isRim ? rimColor : (Math.random() > 0.5 ? wallColor1 : wallColor2);
                                     
+                                    if (isBattlementBase) blockColor = rimColor;
+                                    
+                                    // Crenellations (Gaps in battlements)
+                                    if (isBattlementTop) {
+                                        // Calculate angle for gaps
+                                        const angle = Math.atan2(tDz, tDx);
+                                        const degrees = angle * (180 / Math.PI);
+                                        // 8 gaps (every 45 degrees)
+                                        if (Math.abs(degrees % 45) < 15) {
+                                            visible = false; // Gap
+                                        } else {
+                                            blockColor = rimColor;
+                                        }
+                                    }
+
                                     // Door (Ground Floor only)
-                                    if (localY < 5 && tDz > 0 && Math.abs(tDx) < 1.5) {
+                                    if (localY < 5 && tDz > 0 && Math.abs(tDx) < 1.5 && !isBattlementBase && !isBattlementTop) {
                                         blockColor = woodColor; // Door
                                         if (localY > 3) visible = true; // Arch
                                         else visible = false; // Open door
                                     }
                                     
                                     // Windows (Floors 2, 3, 4)
-                                    if (!isRim && localY > 7) {
+                                    if (!isRim && localY > 7 && localY < towerHeight) {
                                         // Check cardinal directions for windows
                                         const isWindowSide = (Math.abs(tDx) < 1 || Math.abs(tDz) < 1);
                                         const windowY = localY % floorHeight;
@@ -298,42 +321,19 @@ export class VoxelWorld {
                                             blockColor = windowColor;
                                         }
                                     }
-                                } else {
-                                    // Interior
-                                    // visible = false; 
                                 }
                             }
                         }
-                        // Roof & Hat
+                        // Roof (Cone)
                         else {
-                            const roofY = localY - towerHeight;
+                            const roofY = localY - (towerHeight + 2);
+                            const roofHeight = 12;
+                            const maxRoofRadius = towerRadius + 0.5;
+                            const roofRadius = maxRoofRadius * (1 - roofY / roofHeight);
                             
-                            // Roof Base (Overhang)
-                            if (roofY <= 2) {
-                                if (tDist <= towerRadius + 2 - roofY) {
-                                    visible = true;
-                                    blockColor = roofColor1;
-                                }
-                            }
-                            // Hat Cone
-                            else {
-                                const hatHeight = 15;
-                                const hatRadius = 4 * (1 - (roofY - 2) / hatHeight);
-                                
-                                // Hat Bend (Offset center slightly as we go up)
-                                const bendX = Math.sin(roofY * 0.2) * 2;
-                                const bendZ = Math.cos(roofY * 0.2) * 1;
-                                const hatDist = Math.sqrt((tDx - bendX)**2 + (tDz - bendZ)**2);
-                                
-                                if (hatDist <= Math.max(0, hatRadius)) {
-                                    visible = true;
-                                    blockColor = roofColor1;
-                                    
-                                    // Orange Band
-                                    if (roofY >= 4 && roofY <= 6) {
-                                        blockColor = hatBandColor;
-                                    }
-                                }
+                            if (tDist <= Math.max(0, roofRadius)) {
+                                visible = true;
+                                blockColor = (roofY % 2 === 0) ? roofColor1 : roofColor2;
                             }
                         }
                     }
