@@ -44,7 +44,7 @@ export class NetworkManager {
         this.onApplyPotion = null;
     }
 
-    async hostGame(customId = null, playerName = "Host") {
+    async hostGame(customId = null, playerName = "Host", characterClass = "witch") {
         this.isHost = true;
         this.playerName = playerName;
         const config = {
@@ -83,7 +83,7 @@ export class NetworkManager {
                 try {
                     this.gameHost = new GameHost(this);
                     this.gameHost.init();
-                    this.gameHost.addPlayer(id, playerName); // Add self with name
+                    this.gameHost.addPlayer(id, playerName, characterClass); // Add self with name and class
                     
                     this.showConnectionStatus(true, `Hosting: ${id}`);
                     this.publishLobby(id, customId || (playerName + "'s Game"));
@@ -115,7 +115,7 @@ export class NetworkManager {
         });
     }
 
-    async joinGame(hostId, playerName = "Player") {
+    async joinGame(hostId, playerName = "Player", characterClass = "witch") {
         this.isHost = false;
         this.playerName = playerName;
         const config = {
@@ -134,7 +134,7 @@ export class NetworkManager {
                 console.log('My peer ID is: ' + id);
                 
                 this.conn = this.peer.connect(hostId, {
-                    metadata: { name: playerName }
+                    metadata: { name: playerName, characterClass: characterClass }
                 });
                 
                 this.conn.on('open', () => {
@@ -171,7 +171,8 @@ export class NetworkManager {
         
         conn.on('open', () => {
             const playerName = conn.metadata && conn.metadata.name ? conn.metadata.name : "Unknown";
-            this.gameHost.addPlayer(conn.peer, playerName);
+            const characterClass = conn.metadata && conn.metadata.characterClass ? conn.metadata.characterClass : "witch";
+            this.gameHost.addPlayer(conn.peer, playerName, characterClass);
         });
 
         conn.on('data', (data) => {

@@ -3,13 +3,14 @@ import { InputManager } from '../core/InputManager.js';
 import { Projectile } from './Projectile.js';
 
 export class Player {
-    constructor(scene, camera, world, initialPosition, particleSystem, soundManager, networkManager) {
+    constructor(scene, camera, world, initialPosition, particleSystem, soundManager, networkManager, characterClass = 'witch') {
         this.scene = scene;
         this.camera = camera;
         this.world = world;
         this.particleSystem = particleSystem;
         this.soundManager = soundManager;
         this.networkManager = networkManager;
+        this.characterClass = characterClass;
         this.input = new InputManager();
         this.isDead = false;
         this.spawnPoint = initialPosition ? initialPosition.clone() : new THREE.Vector3(10, 20, 10);
@@ -18,8 +19,8 @@ export class Player {
         this.networkTimer = 0;
         this.networkInterval = 0.05; // 20 updates per second
 
-        // Player Mesh (Witch Model)
-        const charData = this.createCharacterMesh();
+        // Player Mesh (Witch/Warlock Model)
+        const charData = this.characterClass === 'warlock' ? this.createWarlockMesh() : this.createWitchMesh();
         this.mesh = charData.mesh;
         this.mesh.position.set(10, 20, 10);
         
@@ -114,6 +115,41 @@ export class Player {
 
     get position() {
         return this.physicsPosition;
+    }
+
+    setCharacterClass(className) {
+        if (this.characterClass === className) return;
+        
+        this.characterClass = className;
+        const oldPosition = this.mesh.position.clone();
+        const oldRotation = this.mesh.rotation.clone();
+        
+        // Remove old mesh
+        this.scene.remove(this.mesh);
+        
+        // Create new mesh
+        const charData = this.characterClass === 'warlock' ? this.createWarlockMesh() : this.createWitchMesh();
+        this.mesh = charData.mesh;
+        
+        // Restore transform
+        this.mesh.position.copy(oldPosition);
+        this.mesh.rotation.copy(oldRotation);
+        
+        // Re-setup attachments
+        // Wand
+        this.wand = this.createWand();
+        charData.rightArm.add(this.wand);
+        this.wand.position.set(0, -0.4, 0.2);
+        this.wand.rotation.x = Math.PI / 2;
+
+        // Broom
+        this.broom = this.createBroom();
+        this.broom.visible = false;
+        this.mesh.add(this.broom);
+        this.broom.position.set(0, 0.5, 0);
+        
+        this.mesh.traverse(c => c.castShadow = true);
+        this.scene.add(this.mesh);
     }
 
     update(delta, remotePlayers) {
@@ -566,9 +602,14 @@ export class Player {
         return broomGroup;
     }
 
-    createCharacterMesh() {
+    createWitchMesh() {
         const mesh = new THREE.Group();
+        const content = new THREE.Group(); // Wrapper to rotate model
+        mesh.add(content);
         
+        // Rotate 180 degrees so face points to -Z (Forward)
+        content.rotation.y = Math.PI;
+
         // Colors
         const skinColor = 0xffccaa;
         const robeColor = 0x4b0082; // Indigo/Purple
@@ -582,20 +623,20 @@ export class Player {
         const bodyMat = new THREE.MeshStandardMaterial({ color: robeColor });
         const body = new THREE.Mesh(bodyGeo, bodyMat);
         body.position.y = 0.9; // Legs are below
-        mesh.add(body);
+        content.add(body);
 
         // 2. Skirt/Robe Bottom
         const skirtGeo = new THREE.BoxGeometry(0.6, 0.6, 0.5);
         const skirt = new THREE.Mesh(skirtGeo, bodyMat);
         skirt.position.y = 0.3;
-        mesh.add(skirt);
+        content.add(skirt);
 
         // 3. Head
         const headGeo = new THREE.BoxGeometry(0.35, 0.35, 0.35);
         const headMat = new THREE.MeshStandardMaterial({ color: skinColor });
         const head = new THREE.Mesh(headGeo, headMat);
         head.position.y = 1.5;
-        mesh.add(head);
+        content.add(head);
 
         // 4. Hair
         const hairMat = new THREE.MeshStandardMaterial({ color: hairColor });
@@ -603,16 +644,16 @@ export class Player {
         // Back Hair
         const hairBack = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.5, 0.15), hairMat);
         hairBack.position.set(0, 1.5, -0.2);
-        mesh.add(hairBack);
+        content.add(hairBack);
 
         // Side Hair
         const hairL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.4), hairMat);
         hairL.position.set(-0.2, 1.5, 0);
-        mesh.add(hairL);
+        content.add(hairL);
         
         const hairR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.4), hairMat);
         hairR.position.set(0.2, 1.5, 0);
-        mesh.add(hairR);
+        content.add(hairR);
 
         // 5. Hat
         const hatGroup = new THREE.Group();
@@ -649,7 +690,7 @@ export class Player {
         h4.rotation.z = -0.2;
         hatGroup.add(h4);
 
-        mesh.add(hatGroup);
+        content.add(hatGroup);
 
         // 6. Arms
         const armGeo = new THREE.BoxGeometry(0.15, 0.5, 0.15);
@@ -658,12 +699,12 @@ export class Player {
         const leftArm = new THREE.Mesh(armGeo, armMat);
         leftArm.position.set(-0.35, 1.0, 0);
         leftArm.rotation.z = 0.2;
-        mesh.add(leftArm);
+        content.add(leftArm);
 
         const rightArm = new THREE.Mesh(armGeo, armMat);
         rightArm.position.set(0.35, 1.0, 0);
         rightArm.rotation.z = -0.2;
-        mesh.add(rightArm);
+        content.add(rightArm);
 
         // Hands
         const handGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
@@ -683,11 +724,11 @@ export class Player {
         
         const leftLeg = new THREE.Mesh(legGeo, bootMat);
         leftLeg.position.set(-0.15, 0.2, 0);
-        mesh.add(leftLeg);
+        content.add(leftLeg);
 
         const rightLeg = new THREE.Mesh(legGeo, bootMat);
         rightLeg.position.set(0.15, 0.2, 0);
-        mesh.add(rightLeg);
+        content.add(rightLeg);
 
         // Face Features
         const eyeGeo = new THREE.BoxGeometry(0.05, 0.05, 0.05);
@@ -695,11 +736,133 @@ export class Player {
         
         const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
         leftEye.position.set(-0.1, 1.55, 0.18);
-        mesh.add(leftEye);
+        content.add(leftEye);
 
         const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
         rightEye.position.set(0.1, 1.55, 0.18);
-        mesh.add(rightEye);
+        content.add(rightEye);
+
+        return { mesh, rightArm, leftArm, rightHand: rHand };
+    }
+
+    createWarlockMesh() {
+        const mesh = new THREE.Group();
+        const content = new THREE.Group();
+        mesh.add(content);
+        content.rotation.y = Math.PI;
+
+        // Colors
+        const skinColor = 0xffccaa;
+        const robeColor = 0x222222; // Dark Grey/Black
+        const trimColor = 0x00ff00; // Neon Green Trim
+        const hoodColor = 0x111111; // Black Hood
+        const bootColor = 0x000000;
+
+        // 1. Body (Robe)
+        const bodyGeo = new THREE.BoxGeometry(0.5, 0.8, 0.4);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: robeColor });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.9;
+        content.add(body);
+
+        // 2. Skirt
+        const skirtGeo = new THREE.BoxGeometry(0.6, 0.6, 0.5);
+        const skirt = new THREE.Mesh(skirtGeo, bodyMat);
+        skirt.position.y = 0.3;
+        content.add(skirt);
+
+        // 3. Head
+        const headGeo = new THREE.BoxGeometry(0.35, 0.35, 0.35);
+        const headMat = new THREE.MeshStandardMaterial({ color: skinColor });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.y = 1.5;
+        content.add(head);
+
+        // 4. Hood (Instead of Hat)
+        const hoodMat = new THREE.MeshStandardMaterial({ color: hoodColor });
+        
+        // Top
+        const hoodTop = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.1, 0.45), hoodMat);
+        hoodTop.position.y = 1.7;
+        content.add(hoodTop);
+
+        // Back
+        const hoodBack = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.4, 0.1), hoodMat);
+        hoodBack.position.set(0, 1.5, -0.18);
+        content.add(hoodBack);
+
+        // Sides
+        const hoodL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.45), hoodMat);
+        hoodL.position.set(-0.18, 1.5, 0);
+        content.add(hoodL);
+
+        const hoodR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.45), hoodMat);
+        hoodR.position.set(0.18, 1.5, 0);
+        content.add(hoodR);
+
+        // 5. Shoulders (Spikes?)
+        const shoulderGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        const trimMat = new THREE.MeshStandardMaterial({ color: trimColor, emissive: trimColor, emissiveIntensity: 0.5 });
+        
+        const sL = new THREE.Mesh(shoulderGeo, trimMat);
+        sL.position.set(-0.35, 1.3, 0);
+        content.add(sL);
+
+        const sR = new THREE.Mesh(shoulderGeo, trimMat);
+        sR.position.set(0.35, 1.3, 0);
+        content.add(sR);
+
+        // 6. Arms
+        const armGeo = new THREE.BoxGeometry(0.15, 0.5, 0.15);
+        const armMat = new THREE.MeshStandardMaterial({ color: robeColor });
+        
+        const leftArm = new THREE.Mesh(armGeo, armMat);
+        leftArm.position.set(-0.35, 1.0, 0);
+        leftArm.rotation.z = 0.2;
+        content.add(leftArm);
+
+        const rightArm = new THREE.Mesh(armGeo, armMat);
+        rightArm.position.set(0.35, 1.0, 0);
+        rightArm.rotation.z = -0.2;
+        content.add(rightArm);
+
+        // Hands
+        const handGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+        const handMat = new THREE.MeshStandardMaterial({ color: skinColor });
+        
+        const lHand = new THREE.Mesh(handGeo, handMat);
+        lHand.position.set(0, -0.3, 0);
+        leftArm.add(lHand);
+
+        const rHand = new THREE.Mesh(handGeo, handMat);
+        rHand.position.set(0, -0.3, 0);
+        rightArm.add(rHand);
+
+        // 7. Legs
+        const legGeo = new THREE.BoxGeometry(0.15, 0.4, 0.15);
+        const bootMat = new THREE.MeshStandardMaterial({ color: bootColor });
+        
+        const leftLeg = new THREE.Mesh(legGeo, bootMat);
+        leftLeg.position.set(-0.15, 0.2, 0);
+        content.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(legGeo, bootMat);
+        rightLeg.position.set(0.15, 0.2, 0);
+        content.add(rightLeg);
+
+        // Face Features (Angry Eyes)
+        const eyeGeo = new THREE.BoxGeometry(0.05, 0.02, 0.05);
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000 });
+        
+        const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+        leftEye.position.set(-0.1, 1.55, 0.18);
+        leftEye.rotation.z = 0.2; // Angry slant
+        content.add(leftEye);
+
+        const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+        rightEye.position.set(0.1, 1.55, 0.18);
+        rightEye.rotation.z = -0.2; // Angry slant
+        content.add(rightEye);
 
         return { mesh, rightArm, leftArm, rightHand: rHand };
     }

@@ -604,6 +604,27 @@ networkManager.onGameStarted = () => {
     }
 };
 
+// Class Selection Logic
+let selectedClass = 'witch';
+const btnClassWitch = document.getElementById('btn-class-witch');
+const btnClassWarlock = document.getElementById('btn-class-warlock');
+
+if (btnClassWitch && btnClassWarlock) {
+    btnClassWitch.addEventListener('click', () => {
+        selectedClass = 'witch';
+        btnClassWitch.classList.add('selected');
+        btnClassWarlock.classList.remove('selected');
+        player.setCharacterClass('witch');
+    });
+
+    btnClassWarlock.addEventListener('click', () => {
+        selectedClass = 'warlock';
+        btnClassWarlock.classList.add('selected');
+        btnClassWitch.classList.remove('selected');
+        player.setCharacterClass('warlock');
+    });
+}
+
 if (btnHost) {
     btnHost.addEventListener('click', async () => {
         const customId = inputCustomHostId.value.trim() || null;
@@ -611,7 +632,7 @@ if (btnHost) {
         
         lobbyStatus.textContent = "Initializing Host...";
         try {
-            const id = await networkManager.hostGame(customId, playerName);
+            const id = await networkManager.hostGame(customId, playerName, selectedClass);
             lobbyStatus.textContent = ""; // Clear status
             
             // Show Waiting Room
@@ -654,7 +675,7 @@ if (btnJoin) {
         
         lobbyStatus.textContent = "Connecting...";
         try {
-            await networkManager.joinGame(id, playerName);
+            await networkManager.joinGame(id, playerName, selectedClass);
             lobbyStatus.textContent = "";
             
             // Show Waiting Room

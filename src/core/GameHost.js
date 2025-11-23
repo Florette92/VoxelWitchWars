@@ -51,11 +51,12 @@ export class GameHost {
         });
     }
 
-    addPlayer(id, name = "Unknown") {
-        console.log('Host: Player connected:', id, name);
+    addPlayer(id, name = "Unknown", characterClass = "witch") {
+        console.log('Host: Player connected:', id, name, characterClass);
         this.players[id] = {
             id: id,
             name: name,
+            characterClass: characterClass,
             x: 0, y: 0, z: 0,
             rx: 0, ry: 0,
             team: 'spectator',
