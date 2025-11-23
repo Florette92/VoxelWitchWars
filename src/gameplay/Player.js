@@ -108,6 +108,12 @@ export class Player {
         this.dashCooldown = 3.0;
         this.lastDashTime = 0;
         this.team = 'spectator'; // Default
+        
+        // Mana System
+        this.maxMana = 100;
+        this.mana = 100;
+        this.manaRegen = 5; // Mana per second
+        this.abilityCost = 40; // Cost for Fireball/Ice Wall
 
         // Build Mode
         this.isBuildMode = false;
@@ -140,6 +146,13 @@ export class Player {
 
     update(delta, remotePlayers) {
         if (this.isDead) return;
+
+        // Mana Regen
+        if (this.mana < this.maxMana) {
+            this.mana += this.manaRegen * delta;
+            if (this.mana > this.maxMana) this.mana = this.maxMana;
+            this.updateManaUI();
+        }
 
         // Network Update
         this.networkTimer += delta;
@@ -374,10 +387,24 @@ export class Player {
         }
     }
 
+    updateManaUI() {
+        const bar = document.getElementById('mana-bar');
+        const text = document.getElementById('mana-text');
+        if (bar && text) {
+            bar.style.width = `${(this.mana / this.maxMana) * 100}%`;
+            text.textContent = `${Math.floor(this.mana)} / ${this.maxMana}`;
+        }
+    }
+
     useAbility() {
         const now = performance.now() / 1000;
         if (now - this.lastAbilityTime < this.abilityCooldown) return;
         
+        if (this.mana < this.abilityCost) {
+            // Not enough mana feedback?
+            return;
+        }
+
         if (this.team === 'red') {
             // Fireball
             const direction = new THREE.Vector3(0, 0, -1);
@@ -394,11 +421,8 @@ export class Player {
             
             this.projectiles.push(proj);
             this.lastAbilityTime = now;
-            
-            // Send to network so others see it? 
-            // Currently projectiles are client-side authoritative for the shooter.
-            // We might need to broadcast "spawnProjectile" if we want others to see the fireball.
-            // For now, let's keep it local + hit events.
+            this.mana -= this.abilityCost;
+            this.updateManaUI();
             
         } else if (this.team === 'blue') {
             // Ice Wall
@@ -425,6 +449,8 @@ export class Player {
                 }
             }
             this.lastAbilityTime = now;
+            this.mana -= this.abilityCost;
+            this.updateManaUI();
         }
     }
 }
