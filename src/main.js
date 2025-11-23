@@ -127,6 +127,7 @@ const soundManager = new SoundManager();
 const networkManager = new NetworkManager();
 
 // Multiplayer State
+let gameStarted = false;
 const remotePlayers = new Map();
 const crystalMeshes = new Map();
 const potionMeshes = new Map();
