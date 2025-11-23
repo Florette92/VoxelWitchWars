@@ -289,7 +289,7 @@ export class Player {
         }
 
         // Lava Damage
-        if (terrain === 'lava' && !this.isFlying) {
+        if (terrain === 'lava') {
             this.lavaDamageTimer += delta;
             if (this.lavaDamageTimer > 0.5) {
                 this.lavaDamageTimer = 0;
