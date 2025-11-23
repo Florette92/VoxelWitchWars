@@ -418,7 +418,7 @@ button.start-game {
 
 .start-title {
   position: absolute;
-  top: 10%;
+  top: 5%;
   left: 50%;
   transform: translateX(-50%);
   font-size: 4rem;
