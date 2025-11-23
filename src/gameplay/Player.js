@@ -149,6 +149,10 @@ export class Player {
         this.footstepTimer = 0;
     }
 
+    setSpawnPoint(point) {
+        this.spawnPoint.copy(point);
+    }
+
     get position() {
         return this.physicsPosition;
     }
