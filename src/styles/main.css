@@ -418,7 +418,7 @@ button.start-game {
 
 .start-title {
   position: absolute;
-  top: 15%;
+  top: 10%;
   left: 50%;
   transform: translateX(-50%);
   font-size: 4rem;
@@ -432,7 +432,7 @@ button.start-game {
 
 .start-btn {
   position: absolute;
-  top: 50%;
+  top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-family: 'Press Start 2P', cursive;
@@ -478,7 +478,7 @@ button.start-game {
 /* Start Screen Image */
 .start-image {
   position: absolute;
-  top: 65%;
+  top: 55%;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1;
@@ -489,7 +489,7 @@ button.start-game {
 }
 
 .start-image img {
-  max-width: 500px;
+  max-width: 400px;
   width: 80%;
   height: auto;
   animation: float 3s ease-in-out infinite;
