@@ -84,17 +84,28 @@ export class VoxelWorld {
 
                 if (closestDist > maxRadius && !isWaterfall) continue;
 
-                // Island Shape: Inverted Cone
+                // Island Shape: Inverted Pyramid (Stepped)
                 const nDist = closestDist / maxRadius; // 0 to 1
-                const maxDepth = 45;
-                const bottomNoise = this.noise2D(worldX * 0.05, worldZ * 0.05) * 4;
-                const depth = (maxDepth * (1 - Math.pow(nDist, 1.5))) + bottomNoise;
+                const maxDepth = 55;
+                
+                // Stepped Pyramid Shape
+                // Quantize distance to create steps
+                const stepSize = 4;
+                const steppedDist = Math.floor(closestDist / stepSize) * stepSize;
+                const nStepped = steppedDist / maxRadius;
+                
+                // Linear slope for pyramid look
+                let depth = maxDepth * (1 - nStepped);
+                
+                // Add some noise to the bottom for "icicle" look
+                const bottomNoise = this.noise2D(worldX * 0.1, worldZ * 0.1) * 6;
+                depth += bottomNoise;
                 
                 const groundY = 30;
                 let bottomY = Math.floor(groundY - Math.max(2, depth));
                 
                 if (isWaterfall) {
-                    bottomY = -20; // Waterfall drops down
+                    bottomY = -30; // Waterfall drops down further
                 }
                 
                 // Pond Logic
@@ -334,6 +345,14 @@ export class VoxelWorld {
                             if (tDist <= Math.max(0, roofRadius)) {
                                 visible = true;
                                 blockColor = (roofY % 2 === 0) ? roofColor1 : roofColor2;
+                            }
+                            
+                            // Spire (Single block at top)
+                            if (roofY > roofHeight && roofY <= roofHeight + 2) {
+                                if (tDist < 0.8) {
+                                    visible = true;
+                                    blockColor = roofColor1;
+                                }
                             }
                         }
                     }
