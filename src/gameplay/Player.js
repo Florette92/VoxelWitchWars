@@ -26,10 +26,8 @@ export class Player {
         
         // Wand
         this.wand = this.createWand();
-        // Attach to right hand
-        // Since rightHand is inside rightArm, we need to be careful with transforms
-        // Or just attach to the arm group
-        charData.rightArm.add(this.wand);
+        // Attach to left hand
+        charData.leftArm.add(this.wand);
         this.wand.position.set(0, -0.4, 0.2); // In hand
         this.wand.rotation.x = Math.PI / 2; // Point forward
 
@@ -138,7 +136,7 @@ export class Player {
         // Re-setup attachments
         // Wand
         this.wand = this.createWand();
-        charData.rightArm.add(this.wand);
+        charData.leftArm.add(this.wand);
         this.wand.position.set(0, -0.4, 0.2);
         this.wand.rotation.x = Math.PI / 2;
 
