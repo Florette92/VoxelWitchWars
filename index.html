@@ -45,7 +45,7 @@
         }
       };
     </script>
-    <script type="module" crossorigin src="./assets/index-D-drL6do.js"></script>
+    <script type="module" crossorigin src="./assets/index-D8AHyrjB.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-fAFTNKvQ.css">
   </head>
   <body>
@@ -60,7 +60,7 @@
     <div id="start-screen" class="start-screen">
       <div class="stars"></div>
       <div class="start-content">
-        <h1 class="start-title">VOXEL WITCH WARS</h1>
+        <h1 class="start-title">VOXEL WITCH WARS <span style="font-size: 1rem; color: #aaa;">v1.1</span></h1>
         <button id="start-btn" class="start-btn">PRESS START</button>
         <div class="start-image">
             <img src="./assets/witch-flying-DD8dNenE.png" alt="Voxel Witch Flying">
@@ -106,9 +106,44 @@
         <button id="play-again-btn" class="start-btn">PLAY AGAIN</button>
     </div>
 
+    <!-- Game Mode Selection Menu -->
+    <div id="gamemode-menu" class="menu-overlay hidden">
+      <h1>Select Mode</h1>
+      <div class="panel">
+        <div class="flex-col">
+          <button id="btn-mode-multiplayer" class="primary">Multiplayer</button>
+          <p style="font-size: 0.9rem; color: #aaa; margin: 0;">Join or Host online battles</p>
+        </div>
+        <div class="divider"></div>
+        <div class="flex-col">
+          <button id="btn-mode-campaign" class="secondary">Campaign</button>
+          <p style="font-size: 0.9rem; color: #aaa; margin: 0;">Singleplayer or Co-op Adventure</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Campaign Menu -->
+    <div id="campaign-menu" class="menu-overlay hidden">
+      <h1>Campaign</h1>
+      <div class="panel">
+        <div class="flex-col">
+          <button id="btn-campaign-single" class="primary">Singleplayer</button>
+          <p style="font-size: 0.9rem; color: #aaa; margin: 0;">Play solo adventure</p>
+        </div>
+        <div class="divider"></div>
+        <div class="flex-col">
+          <button id="btn-campaign-coop" class="secondary">Co-op (4 Players)</button>
+          <p style="font-size: 0.9rem; color: #aaa; margin: 0;">Host a co-op session</p>
+        </div>
+        <div class="divider"></div>
+        <button id="btn-campaign-back" style="background: #444;">Back</button>
+      </div>
+    </div>
+
     <!-- Lobby / Main Menu -->
-    <div id="lobby-menu" class="menu-overlay">
-      <h1>Voxel Witch Wars</h1>
+    <div id="lobby-menu" class="menu-overlay hidden">
+      <h1>Multiplayer Lobby</h1>
+      <button id="btn-lobby-back" style="position: absolute; top: 20px; right: 20px; background: #444; padding: 10px 20px; font-size: 1rem;">Back</button>
       
       <!-- Controls Info -->
       <div style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; text-align: left; font-size: 0.8rem; color: #ccc;">
