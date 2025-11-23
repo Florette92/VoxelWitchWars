@@ -8,7 +8,9 @@ export class LavaEffectManager {
         this.player = player;
         
         this.volcanicIslands = [];
+        this.burningTrees = [];
         this.scanForVolcanicIslands();
+        this.scanForTrees();
 
         // Lights
         this.lavaLights = [];
@@ -34,6 +36,45 @@ export class LavaEffectManager {
         }
     }
 
+    scanForTrees() {
+        // Scan for trees in volcanic islands to add fire effects
+        const GRID = 14;
+        const islandRadius = 50;
+
+        for (const island of this.volcanicIslands) {
+            // Scan a grid around the island center
+            const startX = Math.floor((island.x - islandRadius) / GRID);
+            const endX = Math.floor((island.x + islandRadius) / GRID);
+            const startZ = Math.floor((island.z - islandRadius) / GRID);
+            const endZ = Math.floor((island.z + islandRadius) / GRID);
+
+            for (let gx = startX; gx <= endX; gx++) {
+                for (let gz = startZ; gz <= endZ; gz++) {
+                    const cx = gx * GRID + 7;
+                    const cz = gz * GRID + 7;
+
+                    // Check if this grid cell has a tree (logic from VoxelWorld)
+                    const treeHash = this.world.hash(gx, gz);
+                    if (treeHash >= 0.5) {
+                        const ctDx = cx - island.x;
+                        const ctDz = cz - island.z;
+                        if (Math.sqrt(ctDx*ctDx + ctDz*ctDz) >= 12) {
+                            // Tree exists here
+                            // Calculate height
+                            const height = 12 + Math.floor(treeHash * 4);
+                            
+                            this.burningTrees.push({
+                                x: cx,
+                                y: 30 + height - 2, // Near top
+                                z: cz
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     update(delta) {
         // 1. Manage Lights based on player position
         this.updateLights();
@@ -43,6 +84,7 @@ export class LavaEffectManager {
         if (this.spawnTimer > 0.1) { // 10 times a second
             this.spawnTimer = 0;
             this.spawnLavaParticles();
+            this.spawnTreeFire();
         }
     }
 
@@ -159,6 +201,36 @@ export class LavaEffectManager {
                         5
                     );
                 }
+            }
+        }
+    }
+
+    spawnTreeFire() {
+        const pPos = this.player.position;
+        
+        for (const tree of this.burningTrees) {
+            // Only spawn if close to player
+            const dx = pPos.x - tree.x;
+            const dz = pPos.z - tree.z;
+            const distSq = dx*dx + dz*dz;
+            
+            if (distSq < 60 * 60) { // 60 units distance
+                // Spawn fire particle
+                // Random offset around tree top
+                const ox = (Math.random() - 0.5) * 2;
+                const oz = (Math.random() - 0.5) * 2;
+                const oy = (Math.random() - 0.5) * 2;
+                
+                const color = Math.random() > 0.5 ? 0xFF4500 : 0xFFA500; // Red-Orange / Orange
+                
+                this.particleSystem.emit(
+                    new THREE.Vector3(tree.x + ox, tree.y + oy, tree.z + oz),
+                    color,
+                    1, // count
+                    1, // speed
+                    0.8, // life
+                    5 // gravity (up)
+                );
             }
         }
     }

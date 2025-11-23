@@ -286,6 +286,17 @@ export class VoxelWorld {
                                         blockColor = 0x88CCFF; // Ice Path
                                     }
                                 }
+
+                                // Molten Path (From door to edge)
+                                if (biome === 'volcanic') {
+                                    // Door is at +Z, so path goes +Z
+                                    if (Math.abs(tDx) < 2.5 && tDz > 4 && tDz < 48) {
+                                        blockColor = 0x220000; // Dark Obsidian
+                                        // Cracks
+                                        if (Math.random() > 0.8) blockColor = 0x550000; // Magma Rock
+                                        if (Math.random() > 0.95) blockColor = 0xFF4500; // Lava Crack
+                                    }
+                                }
                              }
                              else if (depthFromSurface < 4) blockColor = dirtColor; 
                              else blockColor = stoneColor;
@@ -723,12 +734,19 @@ export class VoxelWorld {
                 const GRID = 12;
                 const gx = Math.floor(ix / GRID);
                 const gz = Math.floor(iz / GRID);
-                const cx = gx * GRID + 6;
-                const cz = gz * GRID + 6;
+                
+                // Jitter (Must match getIceTreeBlock)
+                const h1 = this.hash(gx, gz);
+                const h2 = this.hash(gx + 99, gz + 88);
+                const offsetX = Math.floor((h1 - 0.5) * 4); 
+                const offsetZ = Math.floor((h2 - 0.5) * 4);
+
+                const cx = gx * GRID + 6 + offsetX;
+                const cz = gz * GRID + 6 + offsetZ;
                 
                 // Only return height if we are exactly at the trunk
                 if (ix === cx && iz === cz) {
-                    const treeHash = this.hash(gx, gz);
+                    const treeHash = this.hash(gx * 2, gz * 2);
                     if (treeHash >= 0.4) {
                         // Check distance from tower again for the grid center
                         const ctDx = cx - c.x;
@@ -767,17 +785,45 @@ export class VoxelWorld {
                 const GRID = 14;
                 const gx = Math.floor(ix / GRID);
                 const gz = Math.floor(iz / GRID);
-                const cx = gx * GRID + 7;
-                const cz = gz * GRID + 7;
+                
+                // Jitter (Must match getFireTreeBlock)
+                const h1 = this.hash(gx, gz);
+                const h2 = this.hash(gx + 123, gz + 456);
+                const offsetX = Math.floor((h1 - 0.5) * 6); 
+                const offsetZ = Math.floor((h2 - 0.5) * 6);
+
+                const cx = gx * GRID + 7 + offsetX;
+                const cz = gz * GRID + 7 + offsetZ;
                 
                 if (ix === cx && iz === cz) {
-                    const treeHash = this.hash(gx, gz);
+                    const treeHash = this.hash(gx * 3, gz * 3);
                     if (treeHash >= 0.5) {
                         const ctDx = cx - c.x;
                         const ctDz = cz - c.z;
-                        if (Math.sqrt(ctDx*ctDx + ctDz*ctDz) >= 12) {
-                            return 12 + Math.floor(treeHash * 4);
-                        }
+                        const distFromCenter = Math.sqrt(ctDx*ctDx + ctDz*ctDz);
+
+                        // --- EXCLUSION ZONES (Must match getFireTreeBlock) ---
+                        // 1. Clear Tower Area
+                        if (distFromCenter < 15) return 0;
+
+                        // 2. Clear Edge
+                        if (distFromCenter > 42) return 0;
+
+                        // 3. Molten Path (Door at +Z)
+                        if (Math.abs(ctDx) < 6 && ctDz > 2 && ctDz < 50) return 0;
+
+                        // 4. Check Pond
+                        const pDx = cx - (c.x - 30);
+                        const pDz = cz - c.z;
+                        if (Math.sqrt(pDx*pDx + pDz*pDz) < 15) return 0;
+
+                        // 5. Check River
+                        const rDx = cx - c.x;
+                        const rDz = cz - c.z;
+                        if (rDx < -25 && Math.abs(rDz) < 6) return 0;
+                        // ----------------------------------------------------
+
+                        return 12 + Math.floor(treeHash * 4);
                     }
                 }
                 return 0;
@@ -826,10 +872,16 @@ export class VoxelWorld {
                 const nPond = pDist / 12;
                 const pondDepth = Math.floor(4 * (1 - nPond*nPond));
                 const bedY = groundY - pondDepth;
-                return iy <= bedY; // Only solid below the pond bed (water is not "solid" for destruction usually, or maybe it is?)
-                // If we want to destroy water, return true. But usually we destroy blocks.
-                // Let's assume water is not a block for raycasting purposes here.
+                return iy <= bedY; 
             }
+
+            // Check Waterfall (No collision)
+            const rDx = ix - c.x;
+            const rDz = iz - c.z;
+            const isRiver = (rDx < -30 && Math.abs(rDz) < 3);
+            const isWaterfall = (isRiver && rDx < -48 && rDx > -55);
+            if (isWaterfall) return false;
+
             return true;
         }
 
@@ -1081,11 +1133,22 @@ export class VoxelWorld {
         const GRID = 14; // Spacing
         const gx = Math.floor(x / GRID);
         const gz = Math.floor(z / GRID);
-        const cx = gx * GRID + 7;
-        const cz = gz * GRID + 7;
+        
+        // Random Position (Jitter)
+        // Ensure tree stays within grid cell to avoid cut-offs at boundaries
+        // Grid 14 -> Center 7. Radius ~3. Safe margin ~4.
+        const h1 = this.hash(gx, gz);
+        const h2 = this.hash(gx + 123, gz + 456);
+        
+        // Jitter range: -3 to +3
+        const offsetX = Math.floor((h1 - 0.5) * 6); 
+        const offsetZ = Math.floor((h2 - 0.5) * 6);
+
+        const cx = gx * GRID + 7 + offsetX;
+        const cz = gz * GRID + 7 + offsetZ;
         
         // Check existence
-        const treeHash = this.hash(gx, gz);
+        const treeHash = this.hash(gx * 3, gz * 3); // Different seed for existence
         if (treeHash < 0.5) return { exists: false }; // 50% chance
         
         // Check biome/island
@@ -1096,18 +1159,28 @@ export class VoxelWorld {
         const c = islandData.center;
         const tDx = cx - c.x;
         const tDz = cz - c.z;
-        // Volcanic tower is round now
-        if (Math.sqrt(tDx*tDx + tDz*tDz) < 12) return { exists: false };
+        const distFromCenter = Math.sqrt(tDx*tDx + tDz*tDz);
 
-        // Check Pond/Lava Pool
+        // --- EXCLUSION ZONES ---
+        // 1. Clear Tower Area
+        if (distFromCenter < 15) return { exists: false };
+
+        // 2. Clear Edge
+        if (distFromCenter > 42) return { exists: false };
+
+        // 3. Molten Path (Door at +Z)
+        if (Math.abs(tDx) < 6 && tDz > 2 && tDz < 50) return { exists: false };
+
+        // 4. Check Pond/Lava Pool
         const pDx = cx - (c.x - 30);
         const pDz = cz - c.z;
         if (Math.sqrt(pDx*pDx + pDz*pDz) < 15) return { exists: false };
 
-        // Check River/Lava River
+        // 5. Check River/Lava River
         const rDx = cx - c.x;
         const rDz = cz - c.z;
         if (rDx < -25 && Math.abs(rDz) < 6) return { exists: false };
+        // -----------------------
 
         const H = 12 + Math.floor(treeHash * 4); // 12-16 height
         const localY = y - groundY;
@@ -1207,11 +1280,21 @@ export class VoxelWorld {
         const GRID = 12; // Spacing
         const gx = Math.floor(x / GRID);
         const gz = Math.floor(z / GRID);
-        const cx = gx * GRID + 6;
-        const cz = gz * GRID + 6;
+        
+        // Random Position (Jitter)
+        // Grid 12 -> Center 6. Radius ~3. Safe margin ~3.
+        const h1 = this.hash(gx, gz);
+        const h2 = this.hash(gx + 99, gz + 88);
+        
+        // Jitter range: -2 to +2
+        const offsetX = Math.floor((h1 - 0.5) * 4); 
+        const offsetZ = Math.floor((h2 - 0.5) * 4);
+
+        const cx = gx * GRID + 6 + offsetX;
+        const cz = gz * GRID + 6 + offsetZ;
         
         // Check existence
-        const treeHash = this.hash(gx, gz);
+        const treeHash = this.hash(gx * 2, gz * 2);
         if (treeHash < 0.4) return { exists: false }; // 60% chance
         
         // Check biome/island
@@ -1308,6 +1391,11 @@ export class VoxelWorld {
         const rDx = ix - c.x;
         const rDz = iz - c.z;
         const isRiver = (rDx < -30 && Math.abs(rDz) < 3);
+        
+        // Waterfall Check (No collision)
+        const isWaterfall = (isRiver && rDx < -48 && rDx > -55);
+        if (isWaterfall) return false;
+
         if (isRiver) {
             // River water is roughly y=28 to y=30
             if (iy >= 28 && iy <= 30) {
@@ -1328,6 +1416,16 @@ export class VoxelWorld {
             }
             
             return 'snow'; // Not slippery
+        }
+
+        if (biome === 'volcanic') {
+            // Check Molten Path
+            const tDx = ix - c.x;
+            const tDz = iz - c.z;
+            // Door is at +Z, so path goes +Z
+            if (Math.abs(tDx) < 2.5 && tDz > 4 && tDz < 48) {
+                if (iy === 30) return 'ground'; // Solid ground
+            }
         }
         
         return 'ground';
