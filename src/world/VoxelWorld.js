@@ -199,8 +199,8 @@ export class VoxelWorld {
                     windowColor = 0xAAFFFF; // Cyan Glow
                     rimColor = 0x667788; // Lighter Rim
                     hatBandColor = 0xFFFFFF; // White Band
-                    waterColor = 0x44AAFF; // Icy Water
-                    foamColor = 0xCCFFFF;
+                    waterColor = 0xCCFFFF; // Frozen Water (Ice)
+                    foamColor = 0xFFFFFF;
                 } else if (biome === 'arcane') {
                     grassColor = 0x4B0082; // Indigo
                     dirtColor = 0x2E2B5F; // Dark Purple
@@ -273,6 +273,11 @@ export class VoxelWorld {
                              const depthFromSurface = groundY - y;
                              if (depthFromSurface === 0) {
                                 blockColor = grassColor; 
+
+                                // Floor under tower
+                                if (tDist <= towerRadius - 1.5) {
+                                    blockColor = roofColor1;
+                                }
 
                                 // Ice Path (From door to edge)
                                 if (biome === 'ice') {
@@ -1190,7 +1195,17 @@ export class VoxelWorld {
         const c = islandData.center;
         const tDx = cx - c.x;
         const tDz = cz - c.z;
-        if (Math.sqrt(tDx*tDx + tDz*tDz) < 15) return { exists: false };
+        const distFromCenter = Math.sqrt(tDx*tDx + tDz*tDz);
+        
+        // 1. Clear Tower Area
+        if (distFromCenter < 15) return { exists: false };
+        
+        // 2. Clear Edge (Prevent cut-off trees)
+        if (distFromCenter > 42) return { exists: false };
+
+        // 3. Clear Ice Path
+        // Path is at x=0 (relative), z < -4 and z > -48
+        if (Math.abs(tDx) < 6 && tDz < -2 && tDz > -50) return { exists: false };
 
         // Check Pond (using trunk position cx, cz)
         const pDx = cx - (c.x - 30);
@@ -1255,7 +1270,11 @@ export class VoxelWorld {
         const pDist = Math.sqrt(pDx*pDx + pDz*pDz);
         if (pDist < 12) {
              // Pond water is roughly y=26 to y=30
-             if (iy >= 26 && iy <= 30) return biome === 'volcanic' ? 'lava' : 'water';
+             if (iy >= 26 && iy <= 30) {
+                 if (biome === 'volcanic') return 'lava';
+                 if (biome === 'ice') return 'ice';
+                 return 'water';
+             }
         }
         
         // Check River
@@ -1264,10 +1283,25 @@ export class VoxelWorld {
         const isRiver = (rDx < -30 && Math.abs(rDz) < 3);
         if (isRiver) {
             // River water is roughly y=28 to y=30
-            if (iy >= 28 && iy <= 30) return biome === 'volcanic' ? 'lava' : 'water';
+            if (iy >= 28 && iy <= 30) {
+                if (biome === 'volcanic') return 'lava';
+                if (biome === 'ice') return 'ice';
+                return 'water';
+            }
         }
         
-        if (biome === 'ice') return 'ice';
+        if (biome === 'ice') {
+            // Check Ice Path
+            const tDx = ix - c.x;
+            const tDz = iz - c.z;
+            // Door is at -Z, so path goes -Z
+            if (Math.abs(tDx) < 2.5 && tDz < -4 && tDz > -48) {
+                // Path is on ground level (y=30)
+                if (iy === 30) return 'ice';
+            }
+            
+            return 'snow'; // Not slippery
+        }
         
         return 'ground';
     }
