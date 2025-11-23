@@ -519,7 +519,7 @@ export class Player {
         const shaftGeo = new THREE.CylinderGeometry(0.02, 0.03, 0.8, 8);
         const shaftMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 }); // Dark wood
         const shaft = new THREE.Mesh(shaftGeo, shaftMat);
-        shaft.rotation.x = Math.PI / 2;
+        // Default Cylinder is along Y axis, which is what we want for the tilt logic
         wandGroup.add(shaft);
 
         // Gem
@@ -532,7 +532,7 @@ export class Player {
             opacity: 0.9
         });
         const gem = new THREE.Mesh(gemGeo, gemMat);
-        gem.position.z = 0.4; // Tip of wand
+        gem.position.y = 0.4; // Tip of wand (Y axis)
         wandGroup.add(gem);
         
         // Store reference for particles
@@ -548,19 +548,19 @@ export class Player {
         const handleGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.5, 8);
         const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
         const handle = new THREE.Mesh(handleGeo, woodMat);
-        handle.rotation.x = Math.PI / 2;
+        handle.rotation.x = Math.PI / 2; // Align along Z axis
         broomGroup.add(handle);
 
         // Bristles
         const bristleGeo = new THREE.ConeGeometry(0.2, 0.6, 16);
         const bristleMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c }); // Tan
         const bristles = new THREE.Mesh(bristleGeo, bristleMat);
-        bristles.rotation.x = -Math.PI / 2;
-        bristles.position.z = -1.2;
+        bristles.rotation.x = Math.PI / 2; // Point back
+        bristles.position.z = 1.2; // Back of the broom (+Z)
         broomGroup.add(bristles);
 
         // Position relative to player
-        broomGroup.position.set(0, 0.8, 0);
+        broomGroup.position.set(0, 0.6, 0); // Slightly lower to sit on
         
         return broomGroup;
     }
