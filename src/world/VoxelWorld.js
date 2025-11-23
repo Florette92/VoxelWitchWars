@@ -628,6 +628,30 @@ export class VoxelWorld {
         const isRiver = (rDx < -30 && Math.abs(rDz) < 3);
 
         if (!isTower && !isPond && !isRiver && closestDist > 10 && tDist > 8) {
+            // Ice Biome: New Grid System
+            if (c.type === 'ice') {
+                const GRID = 12;
+                const gx = Math.floor(ix / GRID);
+                const gz = Math.floor(iz / GRID);
+                const cx = gx * GRID + 6;
+                const cz = gz * GRID + 6;
+                
+                // Only return height if we are exactly at the trunk
+                if (ix === cx && iz === cz) {
+                    const treeHash = this.hash(gx, gz);
+                    if (treeHash >= 0.4) {
+                        // Check distance from tower again for the grid center
+                        const ctDx = cx - c.x;
+                        const ctDz = cz - c.z;
+                        if (Math.sqrt(ctDx*ctDx + ctDz*ctDz) >= 15) {
+                            return 10 + Math.floor(treeHash * 5); // Height
+                        }
+                    }
+                }
+                return 0;
+            }
+
+            // Other Biomes: Old System
             const treeNoise = this.noise2D(ix * 0.3, iz * 0.3);
             if (treeNoise > 0.6 && (ix % 3 === 0) && (iz % 3 === 0)) {
                 // Deterministic height using pseudo-random based on position
@@ -896,8 +920,17 @@ export class VoxelWorld {
         return h - Math.floor(h);
     }
 
-    getVegetationBlock(x, y, z, groundY, woodColor = 0x5C4033, leafColor = 0x228B22) {
-        // 1. Legacy Trees (1x1 Columns)
+    getVegetationBlock(x, y, z, groundY, woodColor, leafColor) {
+        // Determine biome for this location to know which tree type to render
+        const islandData = this.getIslandData(x, z);
+        if (!islandData.isIsland) return { exists: false };
+        const biome = islandData.center.type;
+
+        if (biome === 'ice') {
+            return this.getIceTreeBlock(x, y, z, groundY);
+        }
+
+        // 1. Legacy Trees (1x1 Columns) for other biomes
         const treeH = this.getTreeHeight(x, z);
         if (treeH > 0) {
             const localY = y - groundY;
@@ -908,6 +941,63 @@ export class VoxelWorld {
         }
 
         // 2. Small Mushrooms - Removed
+        return { exists: false };
+    }
+
+    getIceTreeBlock(x, y, z, groundY) {
+        const GRID = 12; // Spacing
+        const gx = Math.floor(x / GRID);
+        const gz = Math.floor(z / GRID);
+        const cx = gx * GRID + 6;
+        const cz = gz * GRID + 6;
+        
+        // Check existence
+        const treeHash = this.hash(gx, gz);
+        if (treeHash < 0.4) return { exists: false }; // 60% chance
+        
+        // Check biome/island
+        const islandData = this.getIslandData(cx, cz);
+        if (!islandData.isIsland || islandData.center.type !== 'ice') return { exists: false };
+        
+        // Distance from tower
+        const c = islandData.center;
+        const tDx = cx - c.x;
+        const tDz = cz - c.z;
+        if (Math.sqrt(tDx*tDx + tDz*tDz) < 15) return { exists: false };
+
+        const H = 10 + Math.floor(treeHash * 5); // 10-14 height
+        const localY = y - groundY;
+        
+        if (localY < 0 || localY > H) return { exists: false };
+        
+        const dx = x - cx;
+        const dz = z - cz;
+        const adx = Math.abs(dx);
+        const adz = Math.abs(dz);
+        const maxDist = Math.max(adx, adz); // Square distance
+        
+        // Trunk
+        if (maxDist === 0 && localY < H/2) {
+             return { exists: true, color: 0x2E5A88 }; // Dark Ice Blue
+        }
+        
+        // Leaves (Tiered Squares)
+        let radius = -1;
+        if (localY >= H - 2) radius = 0; // Top tip
+        else if (localY >= H - 4) radius = 1;
+        else if (localY >= H - 7) radius = 2;
+        else if (localY >= H - 10) radius = 3;
+        
+        // Cut off bottom of leaves
+        if (localY < 3) radius = -1;
+
+        if (radius >= 0 && maxDist <= radius) {
+             const blockHash = this.hash(x, y * z);
+             // Ice Palette: Pale Cyan, Electric Blue, Soft Blue
+             const color = blockHash > 0.6 ? 0xA5F2F3 : (blockHash > 0.3 ? 0x7DF9FF : 0x50C0E0);
+             return { exists: true, color: color };
+        }
+        
         return { exists: false };
     }
 
