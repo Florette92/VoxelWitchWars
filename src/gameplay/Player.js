@@ -698,12 +698,12 @@ export class Player {
         
         const leftArm = new THREE.Mesh(armGeo, armMat);
         leftArm.position.set(-0.35, 1.0, 0);
-        leftArm.rotation.z = 0.2;
+        leftArm.rotation.z = 0; // Straight down
         content.add(leftArm);
 
         const rightArm = new THREE.Mesh(armGeo, armMat);
         rightArm.position.set(0.35, 1.0, 0);
-        rightArm.rotation.z = -0.2;
+        rightArm.rotation.z = 0; // Straight down
         content.add(rightArm);
 
         // Hands
@@ -818,12 +818,12 @@ export class Player {
         
         const leftArm = new THREE.Mesh(armGeo, armMat);
         leftArm.position.set(-0.35, 1.0, 0);
-        leftArm.rotation.z = 0.2;
+        leftArm.rotation.z = 0; // Straight down
         content.add(leftArm);
 
         const rightArm = new THREE.Mesh(armGeo, armMat);
         rightArm.position.set(0.35, 1.0, 0);
-        rightArm.rotation.z = -0.2;
+        rightArm.rotation.z = 0; // Straight down
         content.add(rightArm);
 
         // Hands
