@@ -1129,10 +1129,8 @@ export class VoxelWorld {
         return { exists: false };
     }
 
-    getFireTreeBlock(x, y, z, groundY) {
+    getTreeInGrid(gx, gz) {
         const GRID = 14; // Spacing
-        const gx = Math.floor(x / GRID);
-        const gz = Math.floor(z / GRID);
         
         // Random Position (Jitter)
         // Ensure tree stays within grid cell to avoid cut-offs at boundaries
@@ -1183,6 +1181,21 @@ export class VoxelWorld {
         // -----------------------
 
         const H = 12 + Math.floor(treeHash * 4); // 12-16 height
+        
+        return { exists: true, x: cx, z: cz, height: H };
+    }
+
+    getFireTreeBlock(x, y, z, groundY) {
+        const GRID = 14;
+        const gx = Math.floor(x / GRID);
+        const gz = Math.floor(z / GRID);
+        
+        const tree = this.getTreeInGrid(gx, gz);
+        if (!tree.exists) return { exists: false };
+        
+        const cx = tree.x;
+        const cz = tree.z;
+        const H = tree.height;
         const localY = y - groundY;
         
         // Floating Embers (above tree)
@@ -1203,7 +1216,6 @@ export class VoxelWorld {
         const dz = z - cz;
         const adx = Math.abs(dx);
         const adz = Math.abs(dz);
-        const distSq = dx*dx + dz*dz;
         
         // Roots (Base)
         if (localY === 0) {
@@ -1224,18 +1236,10 @@ export class VoxelWorld {
         }
         
         // Flame Canopy (Tapered)
-        // Shape: Wide at bottom (but above trunk), pointy at top
-        // Starts around localY = 4 or 5
-        
         const canopyStart = 4;
         if (localY >= canopyStart) {
             const canopyH = H - canopyStart;
             const progress = (localY - canopyStart) / canopyH; // 0 to 1
-            
-            // Flame shape radius
-            // 0 -> small (bottom)
-            // 0.2 -> wide
-            // 1.0 -> point
             
             let radius = 0;
             if (progress < 0.2) radius = 2;
@@ -1243,33 +1247,16 @@ export class VoxelWorld {
             else if (progress < 0.8) radius = 1;
             else radius = 0;
             
-            // Add some noise to radius for "flicker" shape
-            // const shapeNoise = this.hash(x, y);
-            // if (shapeNoise > 0.8) radius -= 1;
-
             // Manhattan distance for diamond/flame shape look
-            const manhattan = adx + adz;
-            
-            if (manhattan <= radius + 0.5) { // +0.5 for smoothing
-                // Color Gradient
-                // Bottom: Red/Dark Orange
-                // Middle: Orange
-                // Top: Yellow
-                
-                let color = 0xFF4500; // Red-Orange
-                if (progress > 0.7) color = 0xFFD700; // Gold/Yellow
-                else if (progress > 0.4) color = 0xFFA500; // Orange
-                else if (progress > 0.2) color = 0xFF6600; // Dark Orange
-                else color = 0xCC2200; // Dark Red (Bottom)
-                
-                // Add random variation
-                const noise = this.hash(x, y * z);
-                if (noise > 0.8) {
-                    // Sparkle/Hot spot
-                    color = 0xFFFF00; 
-                }
-                
-                return { exists: true, color: color };
+            if (adx + adz <= radius) {
+                 // Core
+                 return { exists: true, color: 0xFF4500 }; // Orange Red
+            }
+            if (adx + adz <= radius + 1) {
+                 // Outer flame (random)
+                 if (this.hash(x, y*z) > 0.3) {
+                     return { exists: true, color: 0xFFA500 }; // Orange
+                 }
             }
         }
         
@@ -1294,7 +1281,7 @@ export class VoxelWorld {
         const cz = gz * GRID + 6 + offsetZ;
         
         // Check existence
-        const treeHash = this.hash(gx * 2, gz * 2);
+        const treeHash = this.hash(gx, gz);
         if (treeHash < 0.4) return { exists: false }; // 60% chance
         
         // Check biome/island
@@ -1429,5 +1416,59 @@ export class VoxelWorld {
         }
         
         return 'ground';
+    }
+
+    getTreeInGrid(gx, gz) {
+        const GRID = 14;
+        
+        // Random Position (Jitter)
+        const h1 = this.hash(gx, gz);
+        const h2 = this.hash(gx + 123, gz + 456);
+        
+        // Jitter range: -3 to +3
+        const offsetX = Math.floor((h1 - 0.5) * 6); 
+        const offsetZ = Math.floor((h2 - 0.5) * 6);
+
+        const cx = gx * GRID + 7 + offsetX;
+        const cz = gz * GRID + 7 + offsetZ;
+        
+        // Check existence
+        const treeHash = this.hash(gx * 3, gz * 3); 
+        if (treeHash < 0.5) return { exists: false }; 
+        
+        // Check biome/island
+        const islandData = this.getIslandData(cx, cz);
+        if (!islandData.isIsland || islandData.center.type !== 'volcanic') return { exists: false };
+        
+        // Distance from tower
+        const c = islandData.center;
+        const tDx = cx - c.x;
+        const tDz = cz - c.z;
+        const distFromCenter = Math.sqrt(tDx*tDx + tDz*tDz);
+
+        // --- EXCLUSION ZONES ---
+        // 1. Clear Tower Area
+        if (distFromCenter < 15) return { exists: false };
+
+        // 2. Clear Edge
+        if (distFromCenter > 42) return { exists: false };
+
+        // 3. Molten Path (Door at +Z)
+        if (Math.abs(tDx) < 6 && tDz > 2 && tDz < 50) return { exists: false };
+
+        // 4. Check Pond/Lava Pool
+        const pDx = cx - (c.x - 30);
+        const pDz = cz - c.z;
+        if (Math.sqrt(pDx*pDx + pDz*pDz) < 15) return { exists: false };
+
+        // 5. Check River/Lava River
+        const rDx = cx - c.x;
+        const rDz = cz - c.z;
+        if (rDx < -25 && Math.abs(rDz) < 6) return { exists: false };
+        // -----------------------
+
+        const H = 12 + Math.floor(treeHash * 4); // 12-16 height
+        
+        return { exists: true, x: cx, z: cz, height: H };
     }
 }
