@@ -50,15 +50,46 @@ export class LavaEffectManager {
 
             for (let gx = startX; gx <= endX; gx++) {
                 for (let gz = startZ; gz <= endZ; gz++) {
-                    const cx = gx * GRID + 7;
-                    const cz = gz * GRID + 7;
+                    // Jitter (Must match VoxelWorld.getFireTreeBlock)
+                    const h1 = this.world.hash(gx, gz);
+                    const h2 = this.world.hash(gx + 123, gz + 456);
+                    
+                    const offsetX = Math.floor((h1 - 0.5) * 6); 
+                    const offsetZ = Math.floor((h2 - 0.5) * 6);
 
-                    // Check if this grid cell has a tree (logic from VoxelWorld)
-                    const treeHash = this.world.hash(gx, gz);
+                    const cx = gx * GRID + 7 + offsetX;
+                    const cz = gz * GRID + 7 + offsetZ;
+
+                    // Check if this grid cell has a tree
+                    const treeHash = this.world.hash(gx * 3, gz * 3);
                     if (treeHash >= 0.5) {
                         const ctDx = cx - island.x;
                         const ctDz = cz - island.z;
-                        if (Math.sqrt(ctDx*ctDx + ctDz*ctDz) >= 12) {
+                        const distFromCenter = Math.sqrt(ctDx*ctDx + ctDz*ctDz);
+
+                        // --- EXCLUSION ZONES (Must match VoxelWorld) ---
+                        let valid = true;
+
+                        // 1. Clear Tower Area
+                        if (distFromCenter < 15) valid = false;
+
+                        // 2. Clear Edge
+                        if (distFromCenter > 42) valid = false;
+
+                        // 3. Molten Path (Door at +Z)
+                        if (Math.abs(ctDx) < 6 && ctDz > 2 && ctDz < 50) valid = false;
+
+                        // 4. Check Pond
+                        const pDx = cx - (island.x - 30);
+                        const pDz = cz - island.z;
+                        if (Math.sqrt(pDx*pDx + pDz*pDz) < 15) valid = false;
+
+                        // 5. Check River
+                        const rDx = cx - island.x;
+                        const rDz = cz - island.z;
+                        if (rDx < -25 && Math.abs(rDz) < 6) valid = false;
+
+                        if (valid) {
                             // Tree exists here
                             // Calculate height
                             const height = 12 + Math.floor(treeHash * 4);
