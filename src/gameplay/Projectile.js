@@ -86,18 +86,15 @@ export class Projectile {
                     for (let y = -radius; y <= radius; y++) {
                         for (let z = -radius; z <= radius; z++) {
                             if (x*x + y*y + z*z <= radius*radius) {
-                                world.removeBlock(cx+x, cy+y, cz+z);
-                                // Extra damage for fireball to ensure destruction
-                                world.removeBlock(cx+x, cy+y, cz+z);
-                                world.removeBlock(cx+x, cy+y, cz+z);
+                                world.damageBlock(cx+x, cy+y, cz+z, 10); // Instant destroy
                             }
                         }
                     }
                 }
             } else {
-                // Remove block
+                // Damage block
                 if (hit.block) {
-                    world.removeBlock(hit.block.x, hit.block.y, hit.block.z);
+                    world.damageBlock(hit.block.x, hit.block.y, hit.block.z, 1);
                 }
             }
             

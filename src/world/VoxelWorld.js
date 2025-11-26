@@ -1025,6 +1025,41 @@ export class VoxelWorld {
         this.generateChunk(chunkX, chunkZ, true);
     }
 
+    damageBlock(x, y, z, damage = 1) {
+        const ix = Math.floor(x);
+        const iy = Math.floor(y);
+        const iz = Math.floor(z);
+        const key = `${ix},${iy},${iz}`;
+
+        // Land Protection: Cannot damage natural blocks at or below ground level (30)
+        if (iy <= 30) return;
+
+        // Check if already destroyed
+        if (this.destroyedBlocks.has(key)) return;
+
+        // Get current health
+        let health = 3; // Default max health
+        if (this.blockHealth.has(key)) {
+            health = this.blockHealth.get(key);
+        }
+
+        health -= damage;
+
+        if (health <= 0) {
+            // Destroy
+            this.removeBlock(x, y, z);
+            this.blockHealth.delete(key);
+        } else {
+            // Update health and visual
+            this.blockHealth.set(key, health);
+            
+            // Regenerate chunk to update color
+            const chunkX = Math.floor(ix / this.chunkSize);
+            const chunkZ = Math.floor(iz / this.chunkSize);
+            this.generateChunk(chunkX, chunkZ, true);
+        }
+    }
+
     removeBlock(x, y, z) {
         const ix = Math.floor(x);
         const iy = Math.floor(y);
