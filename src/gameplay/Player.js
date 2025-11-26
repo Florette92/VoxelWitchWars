@@ -499,6 +499,12 @@ export class Player {
             }
         };
 
+        projectile.onBlockDestroyedCallback = (x, y, z) => {
+            if (this.networkManager) {
+                this.networkManager.sendBlockUpdate(x, y, z, 0); // 0 = Destroyed
+            }
+        };
+
         this.projectiles.push(projectile);
         this.soundManager.playShoot();
     }
@@ -528,6 +534,12 @@ export class Player {
             projectile.onPlayerHitCallback = (targetId, damage) => {
                 if (this.networkManager) {
                     this.networkManager.sendHit(targetId, damage);
+                }
+            };
+
+            projectile.onBlockDestroyedCallback = (x, y, z) => {
+                if (this.networkManager) {
+                    this.networkManager.sendBlockUpdate(x, y, z, 0); // 0 = Destroyed
                 }
             };
 

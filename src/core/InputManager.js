@@ -29,6 +29,12 @@ export class InputManager {
         document.addEventListener('pointerlockchange', () => {
             this.isLocked = document.pointerLockElement === document.body;
         });
+
+        // Prevent context menu on right click
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
     }
 
     isKeyDown(code) {

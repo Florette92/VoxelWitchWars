@@ -1032,10 +1032,10 @@ export class VoxelWorld {
         const key = `${ix},${iy},${iz}`;
 
         // Land Protection: Cannot damage natural blocks at or below ground level (30)
-        if (iy <= 30) return;
+        if (iy <= 30) return false;
 
         // Check if already destroyed
-        if (this.destroyedBlocks.has(key)) return;
+        if (this.destroyedBlocks.has(key)) return false;
 
         // Get current health
         let health = 3; // Default max health
@@ -1049,6 +1049,7 @@ export class VoxelWorld {
             // Destroy
             this.removeBlock(x, y, z);
             this.blockHealth.delete(key);
+            return true; // Destroyed
         } else {
             // Update health and visual
             this.blockHealth.set(key, health);
@@ -1057,6 +1058,7 @@ export class VoxelWorld {
             const chunkX = Math.floor(ix / this.chunkSize);
             const chunkZ = Math.floor(iz / this.chunkSize);
             this.generateChunk(chunkX, chunkZ, true);
+            return false; // Not destroyed
         }
     }
 

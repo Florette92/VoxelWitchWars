@@ -86,7 +86,10 @@ export class Projectile {
                     for (let y = -radius; y <= radius; y++) {
                         for (let z = -radius; z <= radius; z++) {
                             if (x*x + y*y + z*z <= radius*radius) {
-                                world.damageBlock(cx+x, cy+y, cz+z, 10); // Instant destroy
+                                const destroyed = world.damageBlock(cx+x, cy+y, cz+z, 10); // Instant destroy
+                                if (destroyed && this.onBlockDestroyedCallback) {
+                                    this.onBlockDestroyedCallback(cx+x, cy+y, cz+z);
+                                }
                             }
                         }
                     }
@@ -94,7 +97,10 @@ export class Projectile {
             } else {
                 // Damage block
                 if (hit.block) {
-                    world.damageBlock(hit.block.x, hit.block.y, hit.block.z, 1);
+                    const destroyed = world.damageBlock(hit.block.x, hit.block.y, hit.block.z, 1);
+                    if (destroyed && this.onBlockDestroyedCallback) {
+                        this.onBlockDestroyedCallback(hit.block.x, hit.block.y, hit.block.z);
+                    }
                 }
             }
             
