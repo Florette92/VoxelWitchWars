@@ -232,6 +232,11 @@ export class Player {
                 this.shoot();
                 this.lastShotTime = 0;
             }
+
+            // Right Click Ability
+            if (this.input.isMouseButtonDown(2)) {
+                this.useAbility();
+            }
         }
 
         // Update Projectiles (Moved to top)
@@ -499,8 +504,13 @@ export class Player {
     }
 
     useAbility() {
+        // Cooldown check for ability to prevent spam
+        const now = performance.now();
+        if (now - this.lastAbilityTime < 500) return; // 0.5s cooldown
+
         if (this.mana < this.abilityCost) return;
 
+        this.lastAbilityTime = now;
         const damageMult = this.damageBuffTimer > 0 ? 2 : 1;
 
         if (this.team === 'red') {
