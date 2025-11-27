@@ -20,6 +20,11 @@ export class Projectile {
             size = 0.6;
             this.damage = 30 * damageMultiplier;
             this.lifeTime = 3.0;
+        } else if (this.type === 'icebolt') {
+            color = 0x00ffff; // Cyan
+            size = 0.6;
+            this.damage = 30 * damageMultiplier;
+            this.lifeTime = 3.0;
         }
 
         const geometry = new THREE.SphereGeometry(size, 8, 8);
@@ -44,9 +49,13 @@ export class Projectile {
         }
 
         // Tracer / Trail
+        let trailColor = 0x00ffff;
+        if (this.type === 'fireball') trailColor = 0xff4400;
+        else if (this.type === 'icebolt') trailColor = 0x00ffff;
+
         this.particleSystem.emit(
             this.mesh.position, 
-            this.type === 'fireball' ? 0xff4400 : 0x00ffff, 
+            trailColor, 
             1, // count
             0.5, // speed
             0.2 // life
@@ -61,7 +70,8 @@ export class Projectile {
             for (const [id, rp] of remotePlayers) {
                 // Simple sphere check
                 const distToPlayer = this.mesh.position.distanceTo(rp.mesh.position);
-                if (distToPlayer < (this.type === 'fireball' ? 3.0 : 1.5)) { // Hit radius
+                const hitRadius = (this.type === 'fireball' || this.type === 'icebolt') ? 3.0 : 1.5;
+                if (distToPlayer < hitRadius) { // Hit radius
                     this.onHitPlayer(id);
                     return;
                 }
@@ -75,7 +85,7 @@ export class Projectile {
             // Move to hit point
             this.mesh.position.copy(hit.point);
             
-            if (this.type === 'fireball') {
+            if (this.type === 'fireball' || this.type === 'icebolt') {
                 // Explosion Logic
                 const radius = 3;
                 const cx = Math.floor(hit.point.x);

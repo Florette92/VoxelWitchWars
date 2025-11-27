@@ -547,26 +547,30 @@ export class Player {
             this.mana -= this.abilityCost;
             this.updateManaUI();
         } else if (this.team === 'blue') {
-            // Ice Wall
-            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
-            const target = this.camera.position.clone().add(forward.multiplyScalar(5));
-            
-            const bx = Math.floor(target.x);
-            const by = Math.floor(target.y);
-            const bz = Math.floor(target.z);
+            // Ice Bolt
+            const projectile = new Projectile(
+                this.scene, 
+                this.wand.getWorldPosition(new THREE.Vector3()), 
+                this.camera.getWorldDirection(new THREE.Vector3()), 
+                this.particleSystem,
+                this.soundManager,
+                'icebolt',
+                damageMult
+            );
 
-            // Create a 3x3 wall
-            for(let x = -1; x <= 1; x++) {
-                for(let y = 0; y < 3; y++) {
-                    // Simplified: Just place 3 blocks high at target
-                    // Use addBlock with Ice color (0x88ccff)
-                    this.world.addBlock(bx, by + y, bz, 0x88ccff); 
-                    if (this.networkManager) {
-                        this.networkManager.sendBlockUpdate(bx, by + y, bz, 2); // 2 = Ice ID for network
-                    }
+            projectile.onPlayerHitCallback = (targetId, damage) => {
+                if (this.networkManager) {
+                    this.networkManager.sendHit(targetId, damage);
                 }
-            }
-            
+            };
+
+            projectile.onBlockDestroyedCallback = (x, y, z) => {
+                if (this.networkManager) {
+                    this.networkManager.sendBlockUpdate(x, y, z, 0); // 0 = Destroyed
+                }
+            };
+
+            this.projectiles.push(projectile);
             this.mana -= this.abilityCost;
             this.updateManaUI();
         }
