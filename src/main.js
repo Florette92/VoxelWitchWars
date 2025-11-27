@@ -731,6 +731,56 @@ if (btnCampaignSingle) {
 
 // --- Game Loop ---
 let lastTime = performance.now();
+let lastCollectionTime = 0;
+
+function checkCrystalCollisions() {
+    if (!player || !player.mesh || !networkManager.playerId) return;
+
+    // Throttle checks to 10 times per second
+    const now = performance.now();
+    if (now - lastCollectionTime < 100) return;
+    lastCollectionTime = now;
+
+    const playerPos = player.mesh.position;
+    const pickupRadius = 3.0; 
+
+    // Check if we are carrying a flag
+    const carriedFlag = localCrystals.find(c => c.carrierId === networkManager.playerId);
+
+    localCrystals.forEach(crystal => {
+        // Distance check
+        const dx = playerPos.x - crystal.x;
+        const dy = playerPos.y - crystal.y;
+        const dz = playerPos.z - crystal.z;
+        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+        if (dist < pickupRadius) {
+            // 1. Try to Collect (Pickup enemy flag or Return friendly flag)
+            if (crystal.state === 'home' || crystal.state === 'dropped') {
+                // Only send if we are not already carrying it
+                if (!carriedFlag) {
+                     // If it's enemy flag, we can pick it up.
+                     if (crystal.team !== player.team) {
+                         networkManager.collectCrystal(crystal.id);
+                     }
+                     // If it's friendly flag and dropped, we can return it.
+                     else if (crystal.team === player.team && crystal.state === 'dropped') {
+                         networkManager.collectCrystal(crystal.id);
+                     }
+                }
+            }
+
+            // 2. Try to Capture
+            // If we are at OUR flag's home position (which is this crystal if it's ours and home)
+            if (crystal.team === player.team && crystal.state === 'home') {
+                if (carriedFlag) {
+                    // We are carrying a flag and we are at our base
+                    networkManager.send('captureFlag', {});
+                }
+            }
+        }
+    });
+}
 
 function animate() {
     requestAnimationFrame(animate);
@@ -757,6 +807,9 @@ function animate() {
         
         // Update Minimap
         if (minimap) minimap.update();
+
+        // Check Crystal Collisions
+        checkCrystalCollisions();
     }
 
     renderer.render(scene, camera);
